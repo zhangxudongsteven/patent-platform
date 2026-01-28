@@ -129,6 +129,16 @@ export function ChatInput({ onSend }: ChatInputProps) {
     return "上传文件";
   };
 
+  const getAcceptTypes = () => {
+    if (selectedTool === "analysis") return ".doc,.docx,.pdf";
+    return ".doc,.docx";
+  };
+
+  const getFormatText = () => {
+    if (selectedTool === "analysis") return "支持 DOC、DOCX、PDF 格式";
+    return "支持 DOC、DOCX 格式";
+  };
+
   return (
     <div className="w-full max-w-3xl mx-auto px-4 pb-6">
       {/* Main Input Box */}
@@ -137,7 +147,7 @@ export function ChatInput({ onSend }: ChatInputProps) {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".doc,.docx"
+          accept={getAcceptTypes()}
           onChange={handleFileChange}
           className="hidden"
         />
@@ -178,7 +188,7 @@ export function ChatInput({ onSend }: ChatInputProps) {
                     {getUploadText()}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    支持 DOC、DOCX 格式
+                    {getFormatText()}
                   </span>
                 </div>
               </button>

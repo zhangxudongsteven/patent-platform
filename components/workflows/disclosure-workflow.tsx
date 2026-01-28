@@ -750,13 +750,6 @@ export function DisclosureWorkflow({
                   </div>
 
                   {/* 生成交底书按钮 */}
-                  <Button
-                    onClick={handleGenerateDocument}
-                    className="w-full gap-2"
-                  >
-                    <FileText className="h-4 w-4" />
-                    生成交底书
-                  </Button>
                 </>
               )}
             </div>
@@ -770,10 +763,6 @@ export function DisclosureWorkflow({
                   <h2 className="text-xl font-semibold text-foreground">
                     专利交底书预览
                   </h2>
-                  <div className="flex items-center gap-2 text-sm text-green-600">
-                    <CheckCircle className="h-4 w-4" />
-                    文档已生成
-                  </div>
                 </div>
 
                 <div className="space-y-6">
@@ -903,21 +892,6 @@ export function DisclosureWorkflow({
                     </div>
                   </div>
                 </div>
-
-                {/* 操作按钮 */}
-                <div className="mt-6 flex gap-3">
-                  <Button className="flex-1 gap-2">
-                    <Download className="h-4 w-4" />
-                    下载 Word 版本
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={onBack}
-                    className="flex-1 bg-transparent"
-                  >
-                    返回主界面
-                  </Button>
-                </div>
               </div>
             </div>
           )}
@@ -925,7 +899,7 @@ export function DisclosureWorkflow({
       </div>
 
       {/* Footer Actions */}
-      {step < 5 && (
+      {step <= 5 && (
         <footer className="flex items-center justify-between border-t border-border bg-card px-6 py-4">
           <div>
             {step > 1 && (
@@ -940,9 +914,15 @@ export function DisclosureWorkflow({
             )}
           </div>
           <div className="flex gap-2">
-            {step < 4 && (
+            {step < 5 ? (
               <Button
-                onClick={() => setStep((step + 1) as any)}
+                onClick={() => {
+                  if (step === 4) {
+                    handleGenerateDocument();
+                  } else {
+                    setStep((step + 1) as any);
+                  }
+                }}
                 disabled={
                   (step === 1 &&
                     (!inventionName.trim() ||
@@ -961,6 +941,11 @@ export function DisclosureWorkflow({
               >
                 下一步
                 <ArrowRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button className="gap-2">
+                <Download className="h-4 w-4" />
+                下载 Word 版本
               </Button>
             )}
           </div>
