@@ -78,11 +78,43 @@ export function DisclosureWorkflow({
   const [documentGenerated, setDocumentGenerated] = useState(false);
 
   // 生成技术背景
-  const generateTechBackground = () => {
+  const generateTechBackground = async () => {
     if (!inventionName.trim() || !technicalField.trim()) return;
 
     setIsGeneratingBackground(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer 111"
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            {
+              role: "system",
+              content: "你是一位专业的专利撰写专家，擅长撰写专利交底书的技术背景部分。请根据提供的信息，生成专业、准确的技术背景描述。"
+            },
+            {
+              role: "user",
+              content: `请为以下发明生成技术背景：\n发明名称：${inventionName}\n技术领域：${technicalField}\n\n要求：\n1. 描述该技术领域的发展现状\n2. 指出现有技术存在的主要问题\n3. 说明本发明需要解决的技术问题\n4. 语言要专业、准确，符合专利撰写规范\n5. 字数控制在300-500字之间`
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 1000
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        setTechBackground(data.choices[0].message.content);
+      } else {
+        throw new Error("API 响应格式错误");
+      }
+    } catch (error) {
+      console.error("生成技术背景失败:", error);
       const background = `随着${technicalField}技术的快速发展，相关领域对${inventionName}的需求日益增长。现有技术中，虽然已有多种解决方案，但仍存在以下问题：
 
 1. 技术效率有待提升，现有方案在处理复杂场景时性能不足；
@@ -91,8 +123,9 @@ export function DisclosureWorkflow({
 
 因此，亟需一种新的技术方案来解决上述问题，提高${technicalField}领域的技术水平。`;
       setTechBackground(background);
+    } finally {
       setIsGeneratingBackground(false);
-    }, 1500);
+    }
   };
 
   // Auto-generate background when entering step 2
