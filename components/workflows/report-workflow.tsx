@@ -18,8 +18,37 @@ import {
   FileSearch,
   CheckCircle,
   Download,
+  Pencil,
+  Save,
+  Trash2,
+  Sparkles,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ReportWorkflowProps {
   fileName: string;
@@ -136,7 +165,7 @@ const mockPatents: PatentItem[] = [
 ];
 
 export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
   // 提案名称（自动生成，可修改）- 移到步骤4
   const [proposalName, setProposalName] = useState(() => {
@@ -182,9 +211,10 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
   const [originalSearchResults, setOriginalSearchResults] = useState<
     PatentItem[]
   >([]);
+  const [editingPatentId, setEditingPatentId] = useState<string | null>(null);
+  const [editingData, setEditingData] = useState<Partial<PatentItem>>({});
 
-  // Step 4: 生成最终结论
-  const [reportGenerated, setReportGenerated] = useState(false);
+  // Step 4: 完善报告信息
   const [standardAdaptation, setStandardAdaptation] = useState(false);
   const [vehicleApplication, setVehicleApplication] = useState(false);
   const [usageProspect, setUsageProspect] = useState<"高" | "低" | "无" | "">(
@@ -200,6 +230,9 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
   const [enforcementability, setEnforcementability] = useState<
     "高" | "低" | "无" | ""
   >("");
+
+  // Step 5: 预览与导出
+  const [reportGenerated, setReportGenerated] = useState(false);
 
   // Auto-generate formula when entering step 2
   useEffect(() => {
@@ -328,28 +361,18 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
     }
   };
 
-  // Auto-generate conclusion when all fields are filled
-  useEffect(() => {
-    if (usageProspect && authorizationProspect && proposalGrade) {
-      const conclusionText =
-        `根据专利检索分析，本提案${proposalName}的综合评估如下：\n\n` +
-        `经过检索共发现${searchResults.length}件相关专利文献，其中包含${searchResults.filter((p) => p.category === "X").length}件X类对比文件、${searchResults.filter((p) => p.category === "Y").length}件Y类对比文件、${searchResults.filter((p) => p.category === "A").length}件A类对比文件。\n\n` +
-        `【用途前景】${usageProspect}：${usageProspect === "高" ? "该技术方案具有较高的市场应用价值和广阔的发展前景。" : usageProspect === "低" ? "该技术方案的市场应用范围相对有限。" : "暂无明确的应用前景。"}\n\n` +
-        `【授权前景】${authorizationProspect}：${authorizationProspect === "高" ? "技术方案具有良好的新颖性和创造性，授权前景乐观。" : authorizationProspect === "中" ? "技术方案具有一定的新颖性，授权可能性适中。" : authorizationProspect === "低" ? "现有技术较为接近，授权存在一定难度。" : "不具备授权条件。"}\n\n` +
-        (standardAdaptation ? `【标准适配】已适配相关标准\n\n` : "") +
-        (vehicleApplication ? `【车型应用】适用于相关车型\n\n` : "") +
-        `【提案等级】${proposalGrade}${proposalGrade === "A" ? " - 建议优先推进" : proposalGrade === "B" ? " - 建议推进" : proposalGrade === "C" ? " - 建议谨慎推进" : " - 不建议推进"}`;
-      setConclusion(conclusionText);
-    }
-  }, [
-    usageProspect,
-    authorizationProspect,
-    proposalGrade,
-    standardAdaptation,
-    vehicleApplication,
-    proposalName,
-    searchResults,
-  ]);
+  // Manual trigger for conclusion generation
+  const handleAutoGenerateConclusion = () => {
+    const conclusionText =
+      `根据专利检索分析，本提案${proposalName || ""}的综合评估如下：\n\n` +
+      `经过检索共发现${searchResults.length}件相关专利文献，其中包含${searchResults.filter((p) => p.category === "X").length}件X类对比文件、${searchResults.filter((p) => p.category === "Y").length}件Y类对比文件、${searchResults.filter((p) => p.category === "A").length}件A类对比文件。\n\n` +
+      `【用途前景】${usageProspect || "未评估"}：${usageProspect === "高" ? "该技术方案具有较高的市场应用价值和广阔的发展前景。" : usageProspect === "低" ? "该技术方案的市场应用范围相对有限。" : usageProspect === "无" ? "暂无明确的应用前景。" : "需进一步评估。"}\n\n` +
+      `【授权前景】${authorizationProspect || "未评估"}：${authorizationProspect === "高" ? "技术方案具有良好的新颖性和创造性，授权前景乐观。" : authorizationProspect === "中" ? "技术方案具有一定的新颖性，授权可能性适中。" : authorizationProspect === "低" ? "现有技术较为接近，授权存在一定难度。" : authorizationProspect === "无" ? "不具备授权条件。" : "需进一步评估。"}\n\n` +
+      (standardAdaptation ? `【标准适配】已适配相关标准\n\n` : "") +
+      (vehicleApplication ? `【车型应用】适用于相关车型\n\n` : "") +
+      `【提案等级】${proposalGrade || "未评级"}${proposalGrade === "A" ? " - 建议优先推进" : proposalGrade === "B" ? " - 建议推进" : proposalGrade === "C" ? " - 建议谨慎推进" : proposalGrade === "不通过" ? " - 不建议推进" : ""}`;
+    setConclusion(conclusionText);
+  };
 
   // Generate report
   const handleGenerateReport = () => {
@@ -389,7 +412,8 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
             { num: 1, label: "生成检索关键词" },
             { num: 2, label: "生成检索式" },
             { num: 3, label: "检索相关文件" },
-            { num: 4, label: "生成最终结论" },
+            { num: 4, label: "完善报告信息" },
+            { num: 5, label: "生成检索报告" },
           ].map((s, index) => (
             <React.Fragment key={s.num}>
               <div className="flex flex-col items-center">
@@ -414,7 +438,7 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
                   {s.label}
                 </span>
               </div>
-              {index < 3 && (
+              {index < 4 && (
                 <div
                   className={cn(
                     "mx-4 h-0.5 w-16 transition-all",
@@ -679,15 +703,32 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
                   <h2 className="text-xl font-semibold text-foreground">
                     检索专利文献
                   </h2>
-                  {searchResults.length > 0 && (
-                    <Button
-                      variant="outline"
-                      onClick={handleResetResults}
-                      className="gap-2 bg-transparent"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      重置
-                    </Button>
+                  {originalSearchResults.length > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="gap-2 bg-transparent"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                          重置
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>确认重置</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            该操作将抹去列表中的所有修改
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>取消</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleResetResults}>
+                            确认
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                 </div>
 
@@ -741,49 +782,156 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
                                 </div>
                               </td>
                               <td className="px-4 py-4 text-sm text-foreground max-w-xs">
-                                {patent.similarities}
+                                {editingPatentId === patent.id ? (
+                                  <Textarea
+                                    value={editingData.similarities || ""}
+                                    onChange={(e) =>
+                                      setEditingData({
+                                        ...editingData,
+                                        similarities: e.target.value,
+                                      })
+                                    }
+                                    className="min-h-[80px]"
+                                  />
+                                ) : (
+                                  patent.similarities
+                                )}
                               </td>
                               <td className="px-4 py-4 text-sm text-foreground max-w-xs">
-                                {patent.differences}
+                                {editingPatentId === patent.id ? (
+                                  <Textarea
+                                    value={editingData.differences || ""}
+                                    onChange={(e) =>
+                                      setEditingData({
+                                        ...editingData,
+                                        differences: e.target.value,
+                                      })
+                                    }
+                                    className="min-h-[80px]"
+                                  />
+                                ) : (
+                                  patent.differences
+                                )}
                               </td>
                               <td className="px-4 py-4 text-center">
-                                <span
-                                  className={cn(
-                                    "inline-flex items-center justify-center rounded-lg px-3 py-1 text-sm font-bold",
-                                    patent.category === "X" &&
-                                      "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-                                    patent.category === "Y" &&
-                                      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-                                    patent.category === "A" &&
-                                      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-                                  )}
-                                >
-                                  {patent.category}
-                                </span>
+                                {editingPatentId === patent.id ? (
+                                  <Select
+                                    value={editingData.category || ""}
+                                    onValueChange={(value) =>
+                                      setEditingData({
+                                        ...editingData,
+                                        category: value as "X" | "Y" | "A",
+                                      })
+                                    }
+                                  >
+                                    <SelectTrigger className="w-[80px]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="X">X</SelectItem>
+                                      <SelectItem value="Y">Y</SelectItem>
+                                      <SelectItem value="A">A</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <span
+                                    className={cn(
+                                      "inline-flex items-center justify-center rounded-lg px-3 py-1 text-sm font-bold",
+                                      patent.category === "X" &&
+                                        "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+                                      patent.category === "Y" &&
+                                        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+                                      patent.category === "A" &&
+                                        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                                    )}
+                                  >
+                                    {patent.category}
+                                  </span>
+                                )}
                               </td>
                               <td className="px-4 py-4">
-                                <div className="flex items-center justify-center gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="bg-transparent"
-                                  >
-                                    解析
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setSearchResults(
-                                        searchResults.filter(
-                                          (p) => p.id !== patent.id,
-                                        ),
-                                      );
-                                    }}
-                                    className="bg-transparent text-destructive hover:text-destructive"
-                                  >
-                                    删除
-                                  </Button>
+                                <div className="flex items-center justify-center gap-1">
+                                  <TooltipProvider>
+                                    {editingPatentId === patent.id ? (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => {
+                                              setSearchResults(
+                                                searchResults.map((p) =>
+                                                  p.id === patent.id
+                                                    ? { ...p, ...editingData }
+                                                    : p,
+                                                ),
+                                              );
+                                              setEditingPatentId(null);
+                                              setEditingData({});
+                                            }}
+                                            className="h-8 w-8 text-primary hover:text-primary/90"
+                                          >
+                                            <Save className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          保存修改
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    ) : (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => {
+                                              setEditingPatentId(patent.id);
+                                              setEditingData(patent);
+                                            }}
+                                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                          >
+                                            <Pencil className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          编辑信息
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
+
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                        >
+                                          <FileSearch className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>解析专利</TooltipContent>
+                                    </Tooltip>
+
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => {
+                                            setSearchResults(
+                                              searchResults.filter(
+                                                (p) => p.id !== patent.id,
+                                              ),
+                                            );
+                                          }}
+                                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>删除条目</TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
                                 </div>
                               </td>
                             </tr>
@@ -797,314 +945,332 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
             </div>
           )}
 
-          {/* Step 4: 生成最终结论 */}
+          {/* Step 4: 完善报告信息 */}
           {step === 4 && (
             <div className="space-y-6">
-              {!reportGenerated ? (
-                <div className="rounded-lg border border-border bg-card p-6">
-                  <h2 className="mb-4 text-xl font-semibold text-foreground">
-                    完善报告信息
-                  </h2>
-                  <p className="mb-6 text-muted-foreground">
-                    请填写以下信息以完成检索报告：
-                  </p>
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h2 className="mb-4 text-xl font-semibold text-foreground">
+                  完善报告信息
+                </h2>
+                <p className="mb-6 text-muted-foreground">
+                  请填写以下信息以完成检索报告：
+                </p>
 
-                  <div className="space-y-6">
-                    {/* 提案名称 */}
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-foreground">
-                        提案名称
-                      </label>
+                <div className="space-y-6">
+                  {/* 提案名称 */}
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-foreground">
+                      提案名称
+                    </label>
+                    <input
+                      type="text"
+                      value={proposalName}
+                      onChange={(e) => setProposalName(e.target.value)}
+                      placeholder="提案名称（可修改）"
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground outline-none transition-colors focus:border-primary"
+                    />
+                  </div>
+
+                  {/* 标准适配 和 车型应用 */}
+                  <div className="flex gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input
-                        type="text"
-                        value={proposalName}
-                        onChange={(e) => setProposalName(e.target.value)}
-                        placeholder="提案名称（可修改）"
-                        className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground outline-none transition-colors focus:border-primary"
+                        type="checkbox"
+                        checked={standardAdaptation}
+                        onChange={(e) =>
+                          setStandardAdaptation(e.target.checked)
+                        }
+                        className="h-5 w-5 rounded border-border text-primary focus:ring-2 focus:ring-primary"
                       />
-                    </div>
-
-                    {/* 标准适配 和 车型应用 */}
-                    <div className="flex gap-6">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={standardAdaptation}
-                          onChange={(e) =>
-                            setStandardAdaptation(e.target.checked)
-                          }
-                          className="h-5 w-5 rounded border-border text-primary focus:ring-2 focus:ring-primary"
-                        />
-                        <span className="text-sm font-medium text-foreground">
-                          标准适配
-                        </span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={vehicleApplication}
-                          onChange={(e) =>
-                            setVehicleApplication(e.target.checked)
-                          }
-                          className="h-5 w-5 rounded border-border text-primary focus:ring-2 focus:ring-primary"
-                        />
-                        <span className="text-sm font-medium text-foreground">
-                          车型应用
-                        </span>
-                      </label>
-                    </div>
-
-                    {/* 用途前景 */}
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-foreground">
-                        用途前景
-                      </label>
-                      <div className="flex gap-3">
-                        {["高", "低", "无"].map((option) => (
-                          <button
-                            key={option}
-                            onClick={() => setUsageProspect(option as any)}
-                            className={cn(
-                              "flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all",
-                              usageProspect === option
-                                ? "border-primary bg-primary/10 text-primary"
-                                : "border-border bg-background text-foreground hover:bg-accent",
-                            )}
-                          >
-                            {option}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 授权前景 */}
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-foreground">
-                        授权前景
-                      </label>
-                      <div className="flex gap-3">
-                        {["高", "中", "低", "无"].map((option) => (
-                          <button
-                            key={option}
-                            onClick={() =>
-                              setAuthorizationProspect(option as any)
-                            }
-                            className={cn(
-                              "flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all",
-                              authorizationProspect === option
-                                ? "border-primary bg-primary/10 text-primary"
-                                : "border-border bg-background text-foreground hover:bg-accent",
-                            )}
-                          >
-                            {option}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 提案等级 */}
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-foreground">
-                        提案等级
-                      </label>
-                      <div className="flex gap-3">
-                        {["A", "B", "C", "不通过"].map((option) => (
-                          <button
-                            key={option}
-                            onClick={() => setProposalGrade(option as any)}
-                            className={cn(
-                              "flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all",
-                              proposalGrade === option
-                                ? "border-primary bg-primary/10 text-primary"
-                                : "border-border bg-background text-foreground hover:bg-accent",
-                            )}
-                          >
-                            {option}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 结论 */}
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-foreground">
-                        结论
-                      </label>
-                      <textarea
-                        value={conclusion}
-                        onChange={(e) => setConclusion(e.target.value)}
-                        placeholder="结论将根据上述信息自动生成，您也可以手动修改..."
-                        rows={12}
-                        className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary resize-none"
+                      <span className="text-sm font-medium text-foreground">
+                        标准适配
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={vehicleApplication}
+                        onChange={(e) =>
+                          setVehicleApplication(e.target.checked)
+                        }
+                        className="h-5 w-5 rounded border-border text-primary focus:ring-2 focus:ring-primary"
                       />
-                    </div>
+                      <span className="text-sm font-medium text-foreground">
+                        车型应用
+                      </span>
+                    </label>
                   </div>
 
-                  <Button
-                    onClick={handleGenerateReport}
-                    disabled={!conclusion.trim()}
-                    className="mt-6 w-full gap-2"
-                  >
-                    <FileText className="h-4 w-4" />
-                    生成检索报告
-                  </Button>
-                </div>
-              ) : (
-                <div className="rounded-lg border border-primary bg-primary/5 p-6">
-                  <div className="mb-6 flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-                      <CheckCircle className="h-6 w-6 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-semibold text-foreground">
-                        检索报告已生成
-                      </h2>
-                      <p className="text-sm text-muted-foreground">
-                        您可以下载报告或返回主界面
-                      </p>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    {/* 1. 提案名称 */}
-                    <div className="rounded-lg border border-border bg-background p-4">
-                      <h3 className="mb-2 font-semibold text-foreground">
-                        提案名称
-                      </h3>
-                      <p className="text-sm text-foreground">{proposalName}</p>
-                    </div>
-
-                    {/* 2. 检索日期 */}
-                    <div className="rounded-lg border border-border bg-background p-4">
-                      <h3 className="mb-2 font-semibold text-foreground">
-                        检索日期
-                      </h3>
-                      <p className="text-sm text-foreground">
-                        {new Date().toLocaleDateString("zh-CN", {
-                          year: "numeric",
-                          month: "2-digit",
-                          day: "2-digit",
-                        })}
-                      </p>
-                    </div>
-
-                    {/* 3. 检索领域 */}
-                    <div className="rounded-lg border border-border bg-background p-4">
-                      <h3 className="mb-2 font-semibold text-foreground">
-                        检索领域
-                      </h3>
-                      <div className="space-y-1 text-sm text-foreground">
-                        <p>
-                          IPC/CPC 分类号：
-                          {ipcList.map((ipc) => ipc.code).join(", ")}
-                        </p>
-                        <p>
-                          关键词：{keywords.map((kw) => kw.word).join("、")}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* 4. 检索式 */}
-                    <div className="rounded-lg border border-border bg-background p-4">
-                      <h3 className="mb-2 font-semibold text-foreground">
-                        检索式
-                      </h3>
-                      <div className="rounded-lg bg-accent/30 p-3 font-mono text-sm text-foreground">
-                        {generatedFormula}
-                      </div>
-                    </div>
-
-                    {/* 5. 相关文件 */}
-                    <div className="rounded-lg border border-border bg-background p-4">
-                      <h3 className="mb-3 font-semibold text-foreground">
-                        相关文件（共 {searchResults.length} 件）
-                      </h3>
-                      <div className="overflow-hidden rounded-lg border border-border">
-                        <table className="w-full">
-                          <thead className="bg-accent/50">
-                            <tr>
-                              <th className="border-b border-border px-4 py-2 text-left text-sm font-semibold text-foreground">
-                                公开号
-                              </th>
-                              <th className="border-b border-border px-4 py-2 text-left text-sm font-semibold text-foreground">
-                                专利名称
-                              </th>
-                              <th className="border-b border-border px-4 py-2 text-left text-sm font-semibold text-foreground">
-                                相同点
-                              </th>
-                              <th className="border-b border-border px-4 py-2 text-left text-sm font-semibold text-foreground">
-                                不同点
-                              </th>
-                              <th className="border-b border-border px-4 py-2 text-center text-sm font-semibold text-foreground">
-                                判定
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {searchResults.map((patent) => (
-                              <tr
-                                key={patent.id}
-                                className="border-b border-border"
-                              >
-                                <td className="px-4 py-2 font-mono text-sm text-foreground">
-                                  {patent.publicationNumber}
-                                </td>
-                                <td className="px-4 py-2 text-sm text-foreground">
-                                  {patent.title}
-                                </td>
-                                <td className="px-4 py-2 text-sm text-foreground">
-                                  {patent.similarities}
-                                </td>
-                                <td className="px-4 py-2 text-sm text-foreground">
-                                  {patent.differences}
-                                </td>
-                                <td className="px-4 py-2 text-center">
-                                  <span
-                                    className={cn(
-                                      "inline-flex items-center justify-center rounded px-2 py-0.5 text-xs font-bold",
-                                      patent.category === "X" &&
-                                        "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-                                      patent.category === "Y" &&
-                                        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-                                      patent.category === "A" &&
-                                        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-                                    )}
-                                  >
-                                    {patent.category}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                    {/* 6. 结论 */}
-                    <div className="rounded-lg border border-border bg-background p-4">
-                      <h3 className="mb-2 font-semibold text-foreground">
-                        结论
-                      </h3>
-                      <div className="whitespace-pre-wrap text-sm text-foreground">
-                        {conclusion}
-                      </div>
-                    </div>
-
+                  {/* 用途前景 */}
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-foreground">
+                      用途前景
+                    </label>
                     <div className="flex gap-3">
-                      <Button className="flex-1 gap-2">
-                        <Download className="h-4 w-4" />
-                        下载报告 (DOCX)
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={onBack}
-                        className="flex-1 bg-transparent"
-                      >
-                        返回主界面
-                      </Button>
+                      {["高", "低", "无"].map((option) => (
+                        <button
+                          key={option}
+                          onClick={() => setUsageProspect(option as any)}
+                          className={cn(
+                            "flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all",
+                            usageProspect === option
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-background text-foreground hover:bg-accent",
+                          )}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 授权前景 */}
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-foreground">
+                      授权前景
+                    </label>
+                    <div className="flex gap-3">
+                      {["高", "中", "低", "无"].map((option) => (
+                        <button
+                          key={option}
+                          onClick={() =>
+                            setAuthorizationProspect(option as any)
+                          }
+                          className={cn(
+                            "flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all",
+                            authorizationProspect === option
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-background text-foreground hover:bg-accent",
+                          )}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 提案等级 */}
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-foreground">
+                      提案等级
+                    </label>
+                    <div className="flex gap-3">
+                      {["A", "B", "C", "不通过"].map((option) => (
+                        <button
+                          key={option}
+                          onClick={() => setProposalGrade(option as any)}
+                          className={cn(
+                            "flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all",
+                            proposalGrade === option
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-background text-foreground hover:bg-accent",
+                          )}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 结论 */}
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <label className="text-sm font-medium text-foreground">
+                        结论
+                      </label>
+                      {conclusion.trim() ? (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 gap-2 text-primary hover:text-primary/90"
+                            >
+                              <Sparkles className="h-4 w-4" />
+                              生成结论
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>确认生成</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                该操作将覆盖结论框中的所有内容，是否继续？
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>取消</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={handleAutoGenerateConclusion}
+                              >
+                                确认
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleAutoGenerateConclusion}
+                          className="h-8 gap-2 text-primary hover:text-primary/90"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          生成结论
+                        </Button>
+                      )}
+                    </div>
+                    <textarea
+                      value={conclusion}
+                      onChange={(e) => setConclusion(e.target.value)}
+                      placeholder="结论将根据上述信息自动生成，您也可以手动修改..."
+                      rows={12}
+                      className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary resize-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: 生成最终结论 */}
+          {step === 5 && (
+            <div className="space-y-6">
+              <div className="rounded-lg border border-primary bg-primary/5 p-6">
+                <div className="mb-6 flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary">
+                    <CheckCircle className="h-6 w-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-foreground">
+                      检索报告已生成
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      您可以直接下载报告
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {/* 1. 提案名称 */}
+                  <div className="rounded-lg border border-border bg-background p-4">
+                    <h3 className="mb-2 font-semibold text-foreground">
+                      提案名称
+                    </h3>
+                    <p className="text-sm text-foreground">{proposalName}</p>
+                  </div>
+
+                  {/* 2. 检索日期 */}
+                  <div className="rounded-lg border border-border bg-background p-4">
+                    <h3 className="mb-2 font-semibold text-foreground">
+                      检索日期
+                    </h3>
+                    <p className="text-sm text-foreground">
+                      {new Date().toLocaleDateString("zh-CN", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                      })}
+                    </p>
+                  </div>
+
+                  {/* 3. 检索领域 */}
+                  <div className="rounded-lg border border-border bg-background p-4">
+                    <h3 className="mb-2 font-semibold text-foreground">
+                      检索领域
+                    </h3>
+                    <div className="space-y-1 text-sm text-foreground">
+                      <p>
+                        IPC/CPC 分类号：
+                        {ipcList.map((ipc) => ipc.code).join(", ")}
+                      </p>
+                      <p>关键词：{keywords.map((kw) => kw.word).join("、")}</p>
+                    </div>
+                  </div>
+
+                  {/* 4. 检索式 */}
+                  <div className="rounded-lg border border-border bg-background p-4">
+                    <h3 className="mb-2 font-semibold text-foreground">
+                      检索式
+                    </h3>
+                    <div className="rounded-lg bg-accent/30 p-3 font-mono text-sm text-foreground">
+                      {generatedFormula}
+                    </div>
+                  </div>
+
+                  {/* 5. 相关文件 */}
+                  <div className="rounded-lg border border-border bg-background p-4">
+                    <h3 className="mb-3 font-semibold text-foreground">
+                      相关文件（共 {searchResults.length} 件）
+                    </h3>
+                    <div className="overflow-hidden rounded-lg border border-border">
+                      <table className="w-full">
+                        <thead className="bg-accent/50">
+                          <tr>
+                            <th className="border-b border-border px-4 py-2 text-left text-sm font-semibold text-foreground">
+                              公开号
+                            </th>
+                            <th className="border-b border-border px-4 py-2 text-left text-sm font-semibold text-foreground">
+                              专利名称
+                            </th>
+                            <th className="border-b border-border px-4 py-2 text-left text-sm font-semibold text-foreground">
+                              相同点
+                            </th>
+                            <th className="border-b border-border px-4 py-2 text-left text-sm font-semibold text-foreground">
+                              不同点
+                            </th>
+                            <th className="border-b border-border px-4 py-2 text-center text-sm font-semibold text-foreground">
+                              判定
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {searchResults.map((patent) => (
+                            <tr
+                              key={patent.id}
+                              className="border-b border-border"
+                            >
+                              <td className="px-4 py-2 font-mono text-sm text-foreground">
+                                {patent.publicationNumber}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-foreground">
+                                {patent.title}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-foreground">
+                                {patent.similarities}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-foreground">
+                                {patent.differences}
+                              </td>
+                              <td className="px-4 py-2 text-center">
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center justify-center rounded px-2 py-0.5 text-xs font-bold",
+                                    patent.category === "X" &&
+                                      "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+                                    patent.category === "Y" &&
+                                      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+                                    patent.category === "A" &&
+                                      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                                  )}
+                                >
+                                  {patent.category}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* 6. 结论 */}
+                  <div className="rounded-lg border border-border bg-background p-4">
+                    <h3 className="mb-2 font-semibold text-foreground">结论</h3>
+                    <div className="whitespace-pre-wrap text-sm text-foreground">
+                      {conclusion}
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
@@ -1113,10 +1279,12 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
       {/* Footer Navigation */}
       <footer className="flex items-center justify-between border-t border-border bg-card px-6 py-4">
         <div>
-          {step > 1 && step < 4 && (
+          {step > 1 && (
             <Button
               variant="outline"
-              onClick={() => setStep((step - 1) as any)}
+              onClick={() => {
+                setStep((step - 1) as any);
+              }}
               className="gap-2 bg-transparent"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -1125,9 +1293,11 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
           )}
         </div>
         <div className="flex gap-2">
-          {step < 4 && (
+          {step < 5 ? (
             <Button
-              onClick={() => setStep((step + 1) as any)}
+              onClick={() => {
+                setStep((step + 1) as any);
+              }}
               disabled={
                 (step === 1 &&
                   (ipcList.length === 0 || keywords.length === 0)) ||
@@ -1138,6 +1308,11 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
             >
               下一步
               <ArrowRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button className="gap-2">
+              <Download className="h-4 w-4" />
+              下载报告 (DOCX)
             </Button>
           )}
         </div>

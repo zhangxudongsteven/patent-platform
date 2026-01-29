@@ -174,7 +174,8 @@ export function ChatInput({ onSend }: ChatInputProps) {
   };
 
   const getUploadText = () => {
-    if (selectedTool === "analysis") return "点击或拖拽上传专利文件（支持多选）";
+    if (selectedTool === "analysis")
+      return "点击或拖拽上传专利文件（支持多选）";
     if (selectedTool === "search-formula") return "点击或拖拽上传技术交底书";
     if (selectedTool === "report") return "点击或拖拽上传技术交底书";
     return "点击或拖拽上传文件";
@@ -214,14 +215,17 @@ export function ChatInput({ onSend }: ChatInputProps) {
         {/* Text Input Area or File Upload Area */}
         {needsFileUpload ? (
           <div
-            className={cn("p-4 transition-colors", isDragging && "bg-primary/5")}
+            className={cn(
+              "p-4 transition-colors",
+              isDragging && "bg-primary/5",
+            )}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
             {uploadedFiles.length > 0 ? (
-            <div className="flex flex-col gap-2 max-h-[260px] overflow-y-auto pr-1 custom-scrollbar">
-              {uploadedFiles.map((file, index) => (
+              <div className="flex flex-col gap-2 max-h-[260px] overflow-y-auto pr-1 custom-scrollbar">
+                {uploadedFiles.map((file, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between rounded-lg border border-border bg-accent/50 px-4 py-3"
@@ -322,7 +326,9 @@ export function ChatInput({ onSend }: ChatInputProps) {
           <div className="flex items-center gap-2">
             <Button
               onClick={handleSend}
-              disabled={needsFileUpload ? uploadedFiles.length === 0 : !message.trim()}
+              disabled={
+                needsFileUpload ? uploadedFiles.length === 0 : !message.trim()
+              }
               size="icon"
               className={cn(
                 "h-9 w-9 rounded-full transition-all",
