@@ -10,7 +10,6 @@ import { DisclosureWorkflow } from "@/components/workflows/disclosure-workflow";
 import { AnalysisWorkflow } from "@/components/workflows/analysis-workflow";
 import { KeywordSearchWorkflow } from "@/components/workflows/keyword-search-workflow";
 import { Button } from "@/components/ui/button";
-import { Search, Settings, Moon } from "lucide-react";
 
 // 工具名称映射
 const toolNames: Record<string, string> = {
@@ -224,29 +223,6 @@ export default function Home() {
       <div className="flex flex-1 flex-col">
         {/* Header */}
         <header className="flex h-14 items-center justify-end border-b border-border bg-card px-4">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            >
-              <Search className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            >
-              <Moon className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          </div>
         </header>
 
         {/* Chat Area */}
