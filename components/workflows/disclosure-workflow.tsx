@@ -83,11 +83,18 @@ export function DisclosureWorkflow({
 
     setIsGeneratingBackground(true);
     try {
+      const apiKey = process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY || "111";
+      
+      console.log("开始调用 DeepSeek API...");
+      console.log("发明名称:", inventionName);
+      console.log("技术领域:", technicalField);
+      console.log("使用 API Key:", apiKey.substring(0, 10) + "...");
+      
       const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer 111"
+          "Authorization": `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           model: "deepseek-chat",
@@ -106,15 +113,20 @@ export function DisclosureWorkflow({
         })
       });
 
+      console.log("API 响应状态:", response.status);
       const data = await response.json();
+      console.log("API 响应数据:", data);
       
       if (data.choices && data.choices[0] && data.choices[0].message) {
+        console.log("成功获取 AI 生成的内容");
         setTechBackground(data.choices[0].message.content);
       } else {
+        console.error("API 响应格式错误:", data);
         throw new Error("API 响应格式错误");
       }
     } catch (error) {
       console.error("生成技术背景失败:", error);
+      alert(`API 调用失败: ${error.message}。请检查 API Key 是否正确。`);
       const background = `随着${technicalField}技术的快速发展，相关领域对${inventionName}的需求日益增长。现有技术中，虽然已有多种解决方案，但仍存在以下问题：
 
 1. 技术效率有待提升，现有方案在处理复杂场景时性能不足；
