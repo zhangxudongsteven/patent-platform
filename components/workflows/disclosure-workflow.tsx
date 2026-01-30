@@ -192,10 +192,87 @@ export function DisclosureWorkflow({
   };
 
   // AI 风格化改写
-  const handleAIRewrite = () => {
+  const handleAIRewrite = async () => {
     setIsRewriting(true);
-    setTimeout(() => {
-      // 模拟 AI 改写
+    setAIWarnings([]);
+    
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY || "111";
+      const textBlocks = contentBlocks.filter(
+        (b) => b.type === "text" && b.content.trim(),
+      );
+
+      if (textBlocks.length > 0) {
+        const totalText = textBlocks.map((b) => b.content).join("\n\n");
+        
+        console.log("开始调用 DeepSeek API 优化技术方案...");
+        
+        const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: "deepseek-chat",
+            messages: [
+              {
+                role: "system",
+                content: "你是一位专业的专利撰写专家，擅长优化专利交底书的技术方案部分。请根据提供的技术方案内容，进行专业优化。"
+              },
+              {
+                role: "user",
+                content: `请优化以下技术方案内容，保持原意不变，但使表述更加专业、准确、符合专利撰写规范：\n\n${totalText}\n\n要求：\n1. 保持技术方案的核心内容和逻辑\n2. 使用更专业的专利术语\n3. 优化句子结构，使表述更清晰\n4. 识别并列出文中的专有名词（术语）及其释义\n5. 检测并指出以下问题：\n   - 内容过于简短\n   - 描述不够具体\n   - 存在模糊表述（如"等"、"之类"）\n\n请以JSON格式返回，包含以下字段：\n{\n  "optimizedContent": "优化后的技术方案内容",\n  "keywords": [{"term": "术语", "definition": "释义"}],\n  "warnings": [{"type": "brief|unclear", "message": "问题描述"}]\n}`
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 2000
+          })
+        });
+
+        const data = await response.json();
+        console.log("API 响应数据:", data);
+        
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+          try {
+            const result = JSON.parse(data.choices[0].message.content);
+            
+            // 更新内容块
+            const optimizedBlocks = contentBlocks.map((block) => {
+              if (block.type === "text" && block.content.trim()) {
+                return {
+                  ...block,
+                  content: result.optimizedContent || block.content
+                };
+              }
+              return block;
+            });
+            setContentBlocks(optimizedBlocks);
+            
+            // 更新关键词
+            if (result.keywords && result.keywords.length > 0) {
+              setKeywords(result.keywords);
+            }
+            
+            // 更新警告
+            if (result.warnings && result.warnings.length > 0) {
+              setAIWarnings(result.warnings);
+            }
+            
+            console.log("成功优化技术方案");
+          } catch (parseError) {
+            console.error("解析 API 响应失败:", parseError);
+            throw new Error("解析 AI 响应失败");
+          }
+        } else {
+          throw new Error("API 响应格式错误");
+        }
+      }
+    } catch (error) {
+      console.error("优化技术方案失败:", error);
+      alert(`AI 优化失败: ${error.message}。请检查 API Key 是否正确。`);
+      
+      // 回退到模拟优化
       const textBlocks = contentBlocks.filter(
         (b) => b.type === "text" && b.content.trim(),
       );
@@ -252,8 +329,62 @@ export function DisclosureWorkflow({
       }
 
       setAIWarnings(warnings);
+    } finally {
       setIsRewriting(false);
-    }, 2000);
+    }
+  };
+
+  // 单个文本块 AI 优化
+  const handleBlockAIRewrite = async (blockId: string) => {
+    const block = contentBlocks.find((b) => b.id === blockId);
+    if (!block || block.type !== "text" || !block.content.trim()) return;
+
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY || "111";
+      
+      console.log("开始优化单个文本块:", blockId);
+      
+      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            {
+              role: "system",
+              content: "你是一位专业的专利撰写专家，擅长优化专利交底书的技术方案部分。请优化提供的技术方案内容。"
+            },
+            {
+              role: "user",
+              content: `请优化以下技术方案内容，保持原意不变，但使表述更加专业、准确、符合专利撰写规范：\n\n${block.content}\n\n要求：\n1. 保持技术方案的核心内容和逻辑\n2. 使用更专业的专利术语\n3. 优化句子结构，使表述更清晰\n4. 不要添加额外的内容，只优化现有内容`
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 1000
+        })
+      });
+
+      const data = await response.json();
+      console.log("API 响应数据:", data);
+      
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        const optimizedContent = data.choices[0].message.content;
+        setContentBlocks(
+          contentBlocks.map((b) =>
+            b.id === blockId ? { ...b, content: optimizedContent } : b,
+          ),
+        );
+        console.log("成功优化文本块");
+      } else {
+        throw new Error("API 响应格式错误");
+      }
+    } catch (error) {
+      console.error("优化文本块失败:", error);
+      alert(`AI 优化失败: ${error.message}。请检查 API Key 是否正确。`);
+    }
   };
 
   // 关键词管理
@@ -525,223 +656,249 @@ export function DisclosureWorkflow({
 
           {/* Step 3: 技术方案 */}
           {step === 3 && (
-            <div className="space-y-6">
-              <div className="rounded-lg border border-border bg-card p-6">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-foreground">
-                    本发明的技术方案
-                  </h2>
-                  <Button
-                    onClick={handleAIRewrite}
-                    disabled={isRewriting}
-                    className="gap-2"
-                  >
-                    <Sparkles
-                      className={cn("h-4 w-4", isRewriting && "animate-pulse")}
-                    />
-                    {isRewriting ? "AI 处理中..." : "AI 优化"}
-                  </Button>
-                </div>
-
-                <p className="mb-4 text-sm text-muted-foreground">
-                  请详细描述您的技术方案，可以添加文字说明和配图。AI
-                  将帮助您优化表述并识别专有词汇。
-                </p>
-
-                {/* 内容块列表 */}
-                <div className="space-y-4">
-                  {contentBlocks.map((block, index) => (
-                    <div
-                      key={block.id}
-                      className="group relative rounded-lg border border-border bg-background p-4"
-                    >
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {block.type === "text"
-                            ? `文本块 ${index + 1}`
-                            : `图片 ${index + 1}`}
-                        </span>
-                        {contentBlocks.length > 1 && (
-                          <button
-                            onClick={() => deleteContentBlock(block.id)}
-                            className="text-muted-foreground hover:text-destructive transition-colors"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-
-                      {block.type === "text" ? (
-                        <textarea
-                          value={block.content}
-                          onChange={(e) =>
-                            updateContentBlock(block.id, e.target.value)
-                          }
-                          placeholder="请输入技术方案的详细描述..."
-                          rows={6}
-                          className="w-full rounded border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary resize-none"
-                        />
-                      ) : (
-                        <div className="space-y-2">
-                          {block.imageUrl ? (
-                            <div className="relative">
-                              <img
-                                src={block.imageUrl || "/placeholder.svg"}
-                                alt={block.content}
-                                className="max-h-64 rounded-lg object-contain"
-                              />
-                              <p className="mt-2 text-sm text-muted-foreground">
-                                {block.content}
-                              </p>
-                            </div>
-                          ) : (
-                            <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-8 transition-colors hover:border-primary">
-                              <ImageIcon className="mb-2 h-8 w-8 text-muted-foreground" />
-                              <span className="text-sm text-muted-foreground">
-                                点击上传图片
-                              </span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleImageUpload(block.id, e)}
-                                className="hidden"
-                              />
-                            </label>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* 添加内容块按钮 */}
-                <div className="mt-4 flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => addContentBlock("text")}
-                    className="gap-2 bg-transparent"
-                  >
-                    <Plus className="h-4 w-4" />
-                    添加文本
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => addContentBlock("image")}
-                    className="gap-2 bg-transparent"
-                  >
-                    <ImageIcon className="h-4 w-4" />
-                    添加图片
-                  </Button>
-                </div>
-              </div>
-
-              {/* AI 警告提示 */}
-              {aiWarnings.length > 0 && (
-                <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
-                  <div className="mb-2 flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-amber-600" />
-                    <h3 className="font-medium text-amber-700 dark:text-amber-400">
-                      AI 检测到以下问题
-                    </h3>
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto space-y-6 p-6">
+                <div className="rounded-lg border border-border bg-card p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-foreground">
+                      本发明的技术方案
+                    </h2>
                   </div>
-                  <ul className="space-y-1">
-                    {aiWarnings.map((warning, index) => (
-                      <li
-                        key={index}
-                        className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400"
+
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    请详细描述您的技术方案，可以添加文字说明和配图。AI
+                    将帮助您优化表述并识别专有词汇。
+                  </p>
+
+                  {/* 内容块列表 */}
+                  <div className="space-y-4">
+                    {contentBlocks.map((block, index) => (
+                      <div
+                        key={block.id}
+                        className="group relative rounded-lg border border-border bg-background p-4"
                       >
-                        <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-600 flex-shrink-0" />
-                        {warning.message}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* 关键词表 */}
-              <div className="rounded-lg border border-border bg-card p-6">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                    <h3 className="font-semibold text-foreground">关键词表</h3>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={addKeyword}
-                    className="gap-2 text-primary hover:text-primary/80"
-                  >
-                    <Plus className="h-4 w-4" />
-                    添加关键词
-                  </Button>
-                </div>
-
-                {keywords.length > 0 ? (
-                  <div className="overflow-hidden rounded-lg border border-border">
-                    <table className="w-full">
-                      <thead className="bg-accent/50">
-                        <tr>
-                          <th className="border-b border-border px-4 py-2 text-left text-sm font-semibold text-foreground w-1/3">
-                            术语
-                          </th>
-                          <th className="border-b border-border px-4 py-2 text-left text-sm font-semibold text-foreground">
-                            释义
-                          </th>
-                          <th className="border-b border-border px-4 py-2 w-12"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {keywords.map((kw, index) => (
-                          <tr
-                            key={index}
-                            className="border-b border-border last:border-0"
-                          >
-                            <td className="p-2">
-                              <input
-                                type="text"
-                                value={kw.term}
-                                onChange={(e) =>
-                                  updateKeyword(index, "term", e.target.value)
-                                }
-                                placeholder="输入术语"
-                                className="w-full rounded border border-transparent bg-transparent px-2 py-1 text-sm text-foreground hover:border-border focus:border-primary focus:bg-background focus:outline-none"
-                              />
-                            </td>
-                            <td className="p-2">
-                              <input
-                                type="text"
-                                value={kw.definition}
-                                onChange={(e) =>
-                                  updateKeyword(
-                                    index,
-                                    "definition",
-                                    e.target.value,
-                                  )
-                                }
-                                placeholder="输入释义"
-                                className="w-full rounded border border-transparent bg-transparent px-2 py-1 text-sm text-foreground hover:border-border focus:border-primary focus:bg-background focus:outline-none"
-                              />
-                            </td>
-                            <td className="p-2 text-center">
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {block.type === "text"
+                              ? `文本块 ${index + 1}`
+                              : `图片 ${index + 1}`}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {block.type === "text" && block.content.trim() && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleBlockAIRewrite(block.id)}
+                                className="gap-1 text-xs h-7 text-primary hover:text-primary/80"
+                              >
+                                <Sparkles className="h-3 w-3" />
+                                AI 优化
+                              </Button>
+                            )}
+                            {contentBlocks.length > 1 && (
                               <button
-                                onClick={() => deleteKeyword(index)}
+                                onClick={() => deleteContentBlock(block.id)}
                                 className="text-muted-foreground hover:text-destructive transition-colors"
                               >
                                 <X className="h-4 w-4" />
                               </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            )}
+                          </div>
+                        </div>
+
+                        {block.type === "text" ? (
+                          <div className="relative">
+                            <textarea
+                              value={block.content}
+                              onChange={(e) =>
+                                updateContentBlock(block.id, e.target.value)
+                              }
+                              placeholder="请输入技术方案的详细描述..."
+                              rows={6}
+                              className="w-full rounded border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary resize-none"
+                            />
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {block.imageUrl ? (
+                              <div className="relative">
+                                <img
+                                  src={block.imageUrl || "/placeholder.svg"}
+                                  alt={block.content}
+                                  className="max-h-64 rounded-lg object-contain"
+                                />
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                  {block.content}
+                                </p>
+                              </div>
+                            ) : (
+                              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-8 transition-colors hover:border-primary">
+                                <ImageIcon className="mb-2 h-8 w-8 text-muted-foreground" />
+                                <span className="text-sm text-muted-foreground">
+                                  点击上传图片
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => handleImageUpload(block.id, e)}
+                                  className="hidden"
+                                />
+                              </label>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-8 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      暂无关键词，点击右上角添加或等待 AI 自动生成
-                    </p>
+
+                  {/* 添加内容块按钮 */}
+                  <div className="mt-4 flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => addContentBlock("text")}
+                      className="gap-2 bg-transparent"
+                    >
+                      <Plus className="h-4 w-4" />
+                      添加文本
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => addContentBlock("image")}
+                      className="gap-2 bg-transparent"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                      添加图片
+                    </Button>
+                  </div>
+                </div>
+
+                {/* AI 警告提示 */}
+                {aiWarnings.length > 0 && (
+                  <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
+                    <div className="mb-2 flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-amber-600" />
+                      <h3 className="font-medium text-amber-700 dark:text-amber-400">
+                        AI 检测到以下问题
+                      </h3>
+                    </div>
+                    <ul className="space-y-1">
+                      {aiWarnings.map((warning, index) => (
+                        <li
+                          key={index}
+                          className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400"
+                        >
+                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-600 flex-shrink-0" />
+                          {warning.message}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
+              </div>
+
+              {/* 底部固定区域：关键词表和总体优化按钮 */}
+              <div className="border-t border-border bg-card p-4">
+                <div className="mx-auto max-w-4xl space-y-4">
+                  {/* 关键词表 */}
+                  <div className="rounded-lg border border-border bg-card p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-primary" />
+                        <h3 className="text-sm font-semibold text-foreground">专有名词释义</h3>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={addKeyword}
+                        className="gap-1 text-xs h-7 text-primary hover:text-primary/80"
+                      >
+                        <Plus className="h-3 w-3" />
+                        添加
+                      </Button>
+                    </div>
+
+                    {keywords.length > 0 ? (
+                      <div className="overflow-hidden rounded-lg border border-border">
+                        <table className="w-full">
+                          <thead className="bg-accent/50">
+                            <tr>
+                              <th className="border-b border-border px-3 py-1.5 text-left text-xs font-semibold text-foreground w-1/3">
+                                术语
+                              </th>
+                              <th className="border-b border-border px-3 py-1.5 text-left text-xs font-semibold text-foreground">
+                                释义
+                              </th>
+                              <th className="border-b border-border px-3 py-1.5 w-10"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {keywords.map((kw, index) => (
+                              <tr
+                                key={index}
+                                className="border-b border-border last:border-0"
+                              >
+                                <td className="p-1.5">
+                                  <input
+                                    type="text"
+                                    value={kw.term}
+                                    onChange={(e) =>
+                                      updateKeyword(index, "term", e.target.value)
+                                    }
+                                    placeholder="输入术语"
+                                    className="w-full rounded border border-transparent bg-transparent px-2 py-1 text-xs text-foreground hover:border-border focus:border-primary focus:bg-background focus:outline-none"
+                                  />
+                                </td>
+                                <td className="p-1.5">
+                                  <input
+                                    type="text"
+                                    value={kw.definition}
+                                    onChange={(e) =>
+                                      updateKeyword(
+                                        index,
+                                        "definition",
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder="输入释义"
+                                    className="w-full rounded border border-transparent bg-transparent px-2 py-1 text-xs text-foreground hover:border-border focus:border-primary focus:bg-background focus:outline-none"
+                                  />
+                                </td>
+                                <td className="p-1.5 text-center">
+                                  <button
+                                    onClick={() => deleteKeyword(index)}
+                                    className="text-muted-foreground hover:text-destructive transition-colors"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-4 text-center">
+                        <p className="text-xs text-muted-foreground">
+                          暂无专有名词，点击右上角添加或等待 AI 自动生成
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 总体优化按钮 */}
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleAIRewrite}
+                      disabled={isRewriting}
+                      className="gap-2"
+                    >
+                      <Sparkles
+                        className={cn("h-4 w-4", isRewriting && "animate-pulse")}
+                      />
+                      {isRewriting ? "AI 处理中..." : "总体优化"}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
