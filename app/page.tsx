@@ -9,6 +9,7 @@ import { ReportWorkflow } from "@/components/workflows/report-workflow";
 import { DisclosureWorkflow } from "@/components/workflows/disclosure-workflow";
 import { AnalysisWorkflow } from "@/components/workflows/analysis-workflow";
 import { KeywordSearchWorkflow } from "@/components/workflows/keyword-search-workflow";
+import { KeywordRecommendationWorkflow } from "@/components/workflows/keyword-recommendation-workflow";
 import { Button } from "@/components/ui/button";
 
 // 工具名称映射
@@ -17,13 +18,14 @@ const toolNames: Record<string, string> = {
   "search-formula": "专利检索式",
   disclosure: "专利交底书",
   report: "专利检索报告",
+  "keyword-recommendation": "专利关键词-LLM关联词推荐",
   analysis: "专利解析",
 };
 
 // 模拟 AI 回复
 const getAIResponse = (userMessage: string, tool?: string): string => {
   if (tool === "patent-search") {
-    return "我将为您进行全库专利检索。支持的检索方式包括：\n\n1. 关键词检索\n2. 申请人/发明人检索\n3. 分类号检索\n4. 语义检索\n\n请输入您想要检索的内容，例如“人工智能 图像识别”或“华为技术有限公司”。";
+    return "我将为您进行全库专利检索。支持的检索方式包括：\n\n1. 关键词检索\n2. 申请人/发明人检索\n3. 分类号检索\n4. 语义检索\n\n请输入您想要检索的内容，例如'人工智能 图像识别'或'华为技术有限公司'。";
   }
   if (tool === "search-formula") {
     return "根据您的需求，我为您生成以下专利检索式：\n\n(发明名称 OR 摘要) AND (技术特征 OR 关键词) AND (IPC分类号)\n\n这个检索式可以帮助您在专利数据库中精准定位相关技术。建议在使用时根据具体情况调整关键词和分类号。";
@@ -34,11 +36,14 @@ const getAIResponse = (userMessage: string, tool?: string): string => {
   if (tool === "report") {
     return "我将为您生成专利检索报告。报告将包括：\n\n1. 检索策略说明\n2. 相关专利列表\n3. 技术对比分析\n4. 新颖性评估\n5. 专利布局建议\n\n请提供您需要检索的技术主题和关键词。";
   }
+  if (tool === "keyword-recommendation") {
+    return "我将为您生成专利关键词的关联词推荐。基于LLM技术，系统会智能分析核心关键词，生成相关的扩展关联词，包括技术同义词、上下位概念、技术流程关联词及应用场景词。\n\n请输入您的核心关键词，例如'智能座舱'或'人工智能'。";
+  }
   if (tool === "analysis") {
     return "我将为您深度解析专利文献。分析内容包括：\n\n1. 技术问题\n2. 技术手段\n3. 技术效果\n\n请提供需要分析的专利号或上传专利文件。";
   }
 
-  return "您好！我是专利智能助手，专注于为您提供专利相关的专业服务。我可以帮助您：\n\n• 生成精准的专利检索式\n• 撰写规范的专利交底书\n• 制作详细的专利检索报告\n• 深度解析专利技术方案\n\n请告诉我您需要什么帮助，或选择底部的专业工具开始使用。";
+  return "您好！我是专利智能助手，专注于为您提供专利相关的专业服务。我可以帮助您：\n\n• 生成精准的专利检索式\n• 撰写规范的专利交底书\n• 制作详细的专利检索报告\n• 深度解析专利技术方案\n• 智能推荐专利关键词\n\n请告诉我您需要什么帮助，或选择底部的专业工具开始使用。";
 };
 
 export default function Home() {
@@ -48,6 +53,7 @@ export default function Home() {
   const [showDisclosure, setShowDisclosure] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showKeywordSearch, setShowKeywordSearch] = useState(false);
+  const [showKeywordRecommendation, setShowKeywordRecommendation] = useState(false);
   const [uploadedFileNames, setUploadedFileNames] = useState<string[]>([]);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -79,6 +85,12 @@ export default function Home() {
     // 如果是专利交底书工具，直接打开工作流页面
     if (tool === "disclosure") {
       setShowDisclosure(true);
+      return;
+    }
+
+    // 如果是专利关键词推荐工具，直接打开工作流页面
+    if (tool === "keyword-recommendation") {
+      setShowKeywordRecommendation(true);
       return;
     }
 
@@ -120,6 +132,7 @@ export default function Home() {
     setShowDisclosure(false);
     setShowAnalysis(false);
     setShowKeywordSearch(false);
+    setShowKeywordRecommendation(false);
     setUploadedFileName("");
     setSearchQuery("");
   };
@@ -199,14 +212,13 @@ export default function Home() {
     );
   }
 
-  // 如果正在进行关键词搜索工作流，显示专用页面
-  if (showKeywordSearch) {
+  // 如果正在进行关键词推荐工作流，显示专用页面
+  if (showKeywordRecommendation) {
     return (
       <div className="flex h-screen bg-background">
         <ChatSidebar />
         <div className="flex flex-1 flex-col">
-          <KeywordSearchWorkflow
-            initialQuery={searchQuery}
+          <KeywordRecommendationWorkflow
             onBack={handleBackFromWorkflow}
           />
         </div>

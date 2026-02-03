@@ -1,4 +1,4 @@
-import { FileText, Search, Type, FileOutput } from "lucide-react";
+import { FileText, Search, Type, FileOutput, FileSearch, Tag } from "lucide-react";
 
 export interface TestMenuItem {
   title: string;
@@ -29,6 +29,17 @@ export const testConfig: TestMenuItem[] = [
     icon: Search,
     items: [
       // 预留位置，暂时为空，或者可以加一个待开发的页面
+    ],
+  },
+  {
+    title: "专利检索报告",
+    icon: FileSearch,
+    items: [
+      {
+        title: "关键词推荐",
+        url: "/test/disclosure/keyword-recommendation",
+        icon: Tag,
+      },
     ],
   },
 ];
