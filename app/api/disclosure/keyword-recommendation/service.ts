@@ -81,9 +81,16 @@ export async function generateKeywords(params: {
   desiredCount: number;
 }): Promise<string> {
   try {
-    // 快速返回默认关键词，确保API响应速度
-    // 实际项目中可以在这里调用LLM模型生成真实推荐
-    return "智能座舱、车载系统、汽车电子、人机交互、驾驶辅助、车联网、自动驾驶、座舱域控制器、车载信息娱乐系统、智能驾驶舱";
+    const timeoutPromise = new Promise<string>((_, reject) => {
+      setTimeout(() => reject(new Error("关键词推荐生成超时")), 20000);
+    });
+    
+    const result = await Promise.race([
+      keywordRecommendationChain.invoke(params),
+      timeoutPromise
+    ]);
+    
+    return result;
   } catch (error) {
     console.error("关键词推荐生成时发生错误:", error);
     // 返回默认关键词，确保API能够正常响应

@@ -45,46 +45,46 @@ export default function KeywordRecommendationTestPage() {
   };
 
   return (
-    <div style={{ padding: '20px', display: 'flex', gap: '30px', height: 'calc(100vh - 120px)' }}>
+    <div className="p-5 flex gap-7 h-[calc(100vh-120px)]">
       {/* 左侧输入区域 */}
-      <div style={{ flex: 1, maxWidth: '400px', display: 'flex', flexDirection: 'column' }}>
-        <h2 style={{ marginBottom: '20px' }}>关键词推荐设置</h2>
+      <div className="flex-1 max-w-[400px] flex flex-col">
+        <h2 className="mb-5">关键词推荐设置</h2>
         
-        <div style={{ margin: '20px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="my-5 flex flex-col gap-4">
           {/* 核心关键词输入 */}
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>核心关键词 *</label>
+            <label className="block mb-1.5 font-medium">核心关键词 *</label>
             <input
               type="text"
               value={coreKeyword}
               onChange={(e) => setCoreKeyword(e.target.value)}
               placeholder="例如：智能座舱"
-              style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+              className="w-full p-2.5 border border-gray-200 rounded"
             />
           </div>
 
           {/* 技术领域输入 */}
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>技术领域</label>
+            <label className="block mb-1.5 font-medium">技术领域</label>
             <input
               type="text"
               value={technicalField}
               onChange={(e) => setTechnicalField(e.target.value)}
               placeholder="例如：汽车电子"
-              style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+              className="w-full p-2.5 border border-gray-200 rounded"
             />
           </div>
 
           {/* 期望数量输入 */}
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>期望推荐数量</label>
+            <label className="block mb-1.5 font-medium">期望推荐数量</label>
             <input
               type="number"
               min="1"
               max="20"
               value={desiredCount}
               onChange={(e) => setDesiredCount(Number(e.target.value))}
-              style={{ width: '100px', padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+              className="w-[100px] p-2.5 border border-gray-200 rounded"
             />
           </div>
 
@@ -92,17 +92,7 @@ export default function KeywordRecommendationTestPage() {
           <button
             onClick={handleRecommend}
             disabled={loading}
-            style={{
-              padding: '12px 24px',
-              background: loading ? '#ccc' : '#0070f3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              width: '100%',
-              fontSize: '16px',
-              fontWeight: '500'
-            }}
+            className={`p-3 w-full font-medium text-white rounded-md ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'}`}
           >
             {loading ? '推荐中...' : '开始推荐'}
           </button>
@@ -110,15 +100,15 @@ export default function KeywordRecommendationTestPage() {
 
         {/* 错误信息显示 */}
         {error && (
-          <div style={{ color: 'red', margin: '10px 0', padding: '10px', background: '#ffe6e6', borderRadius: '4px' }}>
+          <div className="text-red-500 my-2.5 p-2.5 bg-red-50 rounded">
             错误：{error}
           </div>
         )}
 
         {/* 使用提示 */}
-        <div style={{ marginTop: '20px', padding: '15px', background: '#f5f5f5', borderRadius: '4px' }}>
-          <h4 style={{ marginBottom: '10px' }}>使用提示</h4>
-          <ul style={{ fontSize: '14px', lineHeight: '1.5' }}>
+        <div className="mt-5 p-3.5 bg-gray-100 rounded">
+          <h4 className="mb-2.5">使用提示</h4>
+          <ul className="text-sm leading-relaxed">
             <li>输入核心关键词后，系统会基于LLM技术生成相关的扩展关联词</li>
             <li>选择合适的技术领域可以提高推荐结果的相关性</li>
             <li>推荐的关联词可用于专利检索、技术分析或专利申请文件撰写</li>
@@ -127,22 +117,22 @@ export default function KeywordRecommendationTestPage() {
       </div>
 
       {/* 右侧输出区域 */}
-      <div style={{ flex: 1, minWidth: '400px', borderLeft: '1px solid #eee', paddingLeft: '30px' }}>
-        <h2 style={{ marginBottom: '20px' }}>推荐结果</h2>
+      <div className="flex-1 min-w-[400px] border-l border-gray-200 pl-7">
+        <h2 className="mb-5">推荐结果</h2>
         
         {/* 结果展示区域 */}
-        <div style={{ marginBottom: '30px' }}>
-          <h3 style={{ marginBottom: '15px', fontSize: '16px', fontWeight: '500' }}>生成的关联词（共 {recommendations.length} 个）</h3>
+        <div className="mb-7">
+          <h3 className="mb-3.5 text-base font-medium">生成的关联词（共 {recommendations.length} 个）</h3>
           {recommendations.length > 0 ? (
-            <div style={{ padding: '15px', background: '#f9f9f9', borderRadius: '4px', maxHeight: '400px', overflowY: 'auto' }}>
+            <div className="p-3.5 bg-gray-50 rounded max-h-[400px] overflow-y-auto">
               {recommendations.map((word, index) => (
-                <div key={index} style={{ padding: '8px', borderBottom: '1px solid #eee', fontSize: '14px' }}>
+                <div key={index} className="p-2 border-b border-gray-200 text-sm">
                   {word}
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ padding: '30px', background: '#f9f9f9', borderRadius: '4px', textAlign: 'center' }}>
+            <div className="p-7 bg-gray-50 rounded text-center">
               <p>暂无推荐结果，请点击左侧“开始推荐”按钮。</p>
             </div>
           )}
@@ -151,24 +141,17 @@ export default function KeywordRecommendationTestPage() {
         {/* 复制结果区域 */}
         {recommendations.length > 0 && (
           <div>
-            <h3 style={{ marginBottom: '10px', fontSize: '16px', fontWeight: '500' }}>推荐结果（可直接复制）</h3>
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <h3 className="mb-2.5 text-base font-medium">推荐结果（可直接复制）</h3>
+            <div className="flex gap-2.5">
               <input
                 type="text"
                 value={recommendations.join('、')}
                 readOnly
-                style={{ flex: 1, padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+                className="flex-1 p-2.5 border border-gray-200 rounded"
               />
               <button
                 onClick={() => navigator.clipboard.writeText(recommendations.join('、'))}
-                style={{
-                  padding: '0 15px',
-                  background: '#0070f3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
+                className="px-3.5 py-2.5 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700"
               >
                 复制
               </button>
