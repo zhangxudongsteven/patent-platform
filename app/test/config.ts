@@ -45,13 +45,6 @@ export const testConfig: TestMenuItem[] = [
     ],
   },
   {
-    title: "专利检索式",
-    icon: Search,
-    items: [
-      // 预留位置，暂时为空，或者可以加一个待开发的页面
-    ],
-  },
-  {
     title: "专利检索报告",
     icon: FileText,
     items: [
@@ -60,6 +53,13 @@ export const testConfig: TestMenuItem[] = [
         url: "/test/report/conclusion-generation",
         icon: FileOutput,
       },
+    ],
+  },
+  {
+    title: "专利解析",
+    icon: Search,
+    items: [
+      // 预留位置，暂时为空，或者可以加一个待开发的页面
     ],
   },
 ];

@@ -24,50 +24,53 @@ const CONCLUSION_GENERATION_TEMPLATE_STRING = `你是一位专业的专利分析
 
 请直接输出报告结论的内容，不要包含Markdown标题；`;
 
-// 创建prompt模板
+// 创建 prompt 模板
 const conclusionPromptTemplate = ChatPromptTemplate.fromTemplate(
-  CONCLUSION_GENERATION_TEMPLATE_STRING
+  CONCLUSION_GENERATION_TEMPLATE_STRING,
 );
 
-// 创建OpenAI模型实例
+// 创建 OpenAI Compatible 模型实例
 const model = new ChatOpenAI({
-  modelName: process.env.OPENAI_CHAT_MODEL || "gpt-4",
-  temperature: 0.3, // 较低的temperature确保结果更稳定
+  modelName: process.env.OPENAI_CHAT_MODEL,
+  temperature: 0.3, // 较低的 temperature 确保结果更稳定
   openAIApiKey: process.env.OPENAI_API_KEY,
   configuration: {
     baseURL: process.env.OPENAI_BASE_URL,
-  }
+  },
+  timeout: 120000, // 120s timeout
+  maxRetries: 1,
+  streaming: true,
 });
 
-// 构建生成链
+// 创建字符串输出解析器
+const stringOutputParser = new StringOutputParser();
+
+// 创建处理链
 const conclusionGenerationChain = RunnableSequence.from([
   conclusionPromptTemplate,
   model,
-  new StringOutputParser()
+  stringOutputParser,
 ]);
 
-// 导出生成函数
-export async function generateConclusion(params: {
+/**
+ * 流式生成报告结论
+ * @param params 包含检索主题、检索结果等信息的对象
+ * @returns ReadableStream
+ */
+export async function streamConclusion(params: {
   searchTopic: string;
   searchResults: string;
   keyPatentAnalysis: string;
-  patentMap?: string;
-  innovationAssessment?: string;
+  patentMap: string;
+  innovationAssessment: string;
 }) {
-  const { searchTopic, searchResults, keyPatentAnalysis, patentMap, innovationAssessment } = params;
-  
   try {
-    const conclusion = await conclusionGenerationChain.invoke({
-      searchTopic,
-      searchResults,
-      keyPatentAnalysis,
-      patentMap: patentMap || "暂无专利地图数据",
-      innovationAssessment: innovationAssessment || "暂无创新性评估数据"
-    });
-    
-    return conclusion;
+    const stream = await conclusionGenerationChain.stream(params);
+    return stream;
   } catch (error) {
-    console.error("生成报告结论时出错:", error);
-    throw new Error("生成报告结论失败");
+    console.error("报告结论生成时发生错误:", error);
+    throw new Error("报告结论生成失败");
   }
 }
+
+export { conclusionGenerationChain };
