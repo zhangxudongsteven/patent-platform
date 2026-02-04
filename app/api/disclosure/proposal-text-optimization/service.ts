@@ -35,9 +35,8 @@ const proposalPromptTemplate = ChatPromptTemplate.fromTemplate(
   PROPOSAL_OPTIMIZATION_TEMPLATE_STRING,
 );
 
-// 配置 DeepSeek 模型
 const model = new ChatOpenAI({
-  modelName: process.env.OPENAI_CHAT_MODEL, // 使用与 background-generation 一致的模型配置
+  modelName: process.env.OPENAI_CHAT_MODEL, // 使用统一的模型配置
   temperature: 0.3, // 较低的温度，保持稳定性
   openAIApiKey: process.env.OPENAI_API_KEY, // 使用统一的 OPENAI_API_KEY
   configuration: {
