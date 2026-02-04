@@ -332,7 +332,7 @@ export function ChatInput({ onSend }: ChatInputProps) {
               size="icon"
               className={cn(
                 "h-9 w-9 rounded-full transition-all",
-                (needsFileUpload ? uploadedFiles.length > 0 : !message.trim())
+                (needsFileUpload ? uploadedFiles.length > 0 : message.trim())
                   ? "bg-primary text-primary-foreground hover:bg-primary/90"
                   : "bg-muted text-muted-foreground",
               )}
