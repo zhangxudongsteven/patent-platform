@@ -234,8 +234,7 @@ export default function Home() {
       {/* Main Content */}
       <div className="flex flex-1 flex-col">
         {/* Header */}
-        <header className="flex h-14 items-center justify-end border-b border-border bg-card px-4">
-        </header>
+        <header className="flex h-14 items-center justify-end border-b border-border bg-card px-4"></header>
 
         {/* Chat Area */}
         <main className="flex flex-1 flex-col overflow-hidden">

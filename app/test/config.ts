@@ -1,4 +1,4 @@
-import { FileText, Search, Type, FileOutput, FileSearch, Tag } from "lucide-react";
+import { FileText, Search, Type, FileOutput, FileSearch, Tag, Sparkles } from "lucide-react";
 
 export interface TestMenuItem {
   title: string;
@@ -22,10 +22,41 @@ export const testConfig: TestMenuItem[] = [
         url: "/test/disclosure/background-generation",
         icon: Type,
       },
+      {
+        title: "技术方案优化",
+        url: "/test/disclosure/proposal-text-optimization",
+        icon: Sparkles,
+      },
+      {
+        title: "关键词解释",
+        url: "/test/disclosure/explanation-of-keywords",
+        icon: Search,
+      },
+      {
+        title: "有益效果生成",
+        url: "/test/disclosure/beneficial-effect-generation",
+        icon: Sparkles,
+      },
+      {
+        title: "预保护点生成",
+        url: "/test/disclosure/pre-protection-point-generation",
+        icon: Sparkles,
+      },
     ],
   },
   {
-    title: "专利检索式",
+    title: "专利检索报告",
+    icon: FileText,
+    items: [
+      {
+        title: "报告结论生成",
+        url: "/test/report/conclusion-generation",
+        icon: FileOutput,
+      },
+    ],
+  },
+  {
+    title: "专利解析",
     icon: Search,
     items: [
       // 预留位置，暂时为空，或者可以加一个待开发的页面
