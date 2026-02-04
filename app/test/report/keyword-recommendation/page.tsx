@@ -1,4 +1,4 @@
-// app/test/disclosure/keyword-recommendation/page.tsx
+// app/test/report/keyword-recommendation/page.tsx
 'use client'; // 因为是交互页面，需要标记为客户端组件
 
 import { useState } from 'react';
@@ -26,7 +26,7 @@ export default function KeywordRecommendationTestPage() {
     try {
       // 调用 GET 接口，您也可以改用 POST
       const response = await fetch(
-        `/api/disclosure/keyword-recommendation?keyword=${encodeURIComponent(coreKeyword)}&field=${technicalField}&count=${desiredCount}`
+        `/api/report/keyword-recommendation?keyword=${encodeURIComponent(coreKeyword)}&field=${technicalField}&count=${desiredCount}`
       );
 
       const data = await response.json();

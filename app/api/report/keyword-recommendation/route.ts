@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
 
     if (!coreKeyword) {
       return NextResponse.json(
-        { error: "缺少必要参数。请使用格式：/api/disclosure/keyword-recommendation?keyword=智能座舱&field=汽车电子&count=5" },
+        { error: "缺少必要参数。请使用格式：/api/report/keyword-recommendation?keyword=智能座舱&field=汽车电子&count=5" },
         { status: 400 }
       );
     }

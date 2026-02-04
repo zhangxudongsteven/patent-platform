@@ -15,7 +15,6 @@ import {
   Upload,
   X,
   Search,
-  Tags,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -196,9 +195,6 @@ export function ChatInput({ onSend }: ChatInputProps) {
     if (selectedTool === "patent-search") {
       return "请输入关键词进行检索...";
     }
-    if (selectedTool === "keyword-recommendation") {
-      return "请输入核心关键词...";
-    }
     return "向专利助手提问...";
   };
 
@@ -311,11 +307,6 @@ export function ChatInput({ onSend }: ChatInputProps) {
                     onSend?.("开始专利交底书流程", "disclosure");
                     return;
                   }
-                  // 关键词推荐直接触发工作流
-                  if (tool.id === "keyword-recommendation") {
-                    onSend?.("开始关键词推荐流程", "keyword-recommendation");
-                    return;
-                  }
                   setSelectedTool(selectedTool === tool.id ? null : tool.id);
                 }}
                 className={cn(
@@ -336,12 +327,12 @@ export function ChatInput({ onSend }: ChatInputProps) {
             <Button
               onClick={handleSend}
               disabled={
-                needsFileUpload ? uploadedFiles.length === 0 : !message.trim() && selectedTool !== "keyword-recommendation"
+                needsFileUpload ? uploadedFiles.length === 0 : !message.trim()
               }
               size="icon"
               className={cn(
                 "h-9 w-9 rounded-full transition-all",
-                (needsFileUpload ? uploadedFiles.length > 0 : !message.trim() || selectedTool === "keyword-recommendation")
+                (needsFileUpload ? uploadedFiles.length > 0 : !message.trim())
                   ? "bg-primary text-primary-foreground hover:bg-primary/90"
                   : "bg-muted text-muted-foreground",
               )}
