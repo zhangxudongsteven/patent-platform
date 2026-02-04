@@ -104,6 +104,9 @@ importers:
       '@vercel/analytics':
         specifier: 1.3.1
         version: 1.3.1(next@16.1.6(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)
+      adm-zip:
+        specifier: ^0.5.16
+        version: 0.5.16
       ai:
         specifier: ^6.0.64
         version: 6.0.64(zod@3.25.76)
@@ -1342,6 +1345,10 @@ packages:
   '@vercel/oidc@3.1.0':
     resolution: {integrity: sha512-Fw28YZpRnA3cAHHDlkt7xQHiJ0fcL+NRcIqsocZQUSmbzeIKRpwttJjik5ZGanXP+vlA4SbTg+AbA3bP363l+w==}
     engines: {node: '>= 20'}
+
+  adm-zip@0.5.16:
+    resolution: {integrity: sha512-TGw5yVi4saajsSEgz25grObGHEUaDrniwvA2qwSC060KfqGPdglhvPMA2lPIoxs3PQIItj2iag35fONcQqgUaQ==}
+    engines: {node: '>=12.0'}
 
   ai@6.0.64:
     resolution: {integrity: sha512-eH+6FC2THf0rXamPOBAPGNBuMvqv4gE5+IKoWVBrO1TkrjwRiuP3+P6yl7/HcXzN9JLbVe3lL8yaTIfn0ZwvxQ==}
@@ -3308,6 +3315,8 @@ snapshots:
       react: 19.2.0
 
   '@vercel/oidc@3.1.0': {}
+
+  adm-zip@0.5.16: {}
 
   ai@6.0.64(zod@3.25.76):
     dependencies:
