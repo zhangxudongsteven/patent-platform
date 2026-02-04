@@ -1,4 +1,4 @@
-import { FileText, Search, Type, FileOutput, FileSearch, Tag, Sparkles } from "lucide-react";
+import { FileText, Search, Type, FileOutput, Tag, Sparkles } from "lucide-react";
 
 export interface TestMenuItem {
   title: string;
