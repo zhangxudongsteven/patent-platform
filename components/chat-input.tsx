@@ -57,13 +57,6 @@ const tools: Tool[] = [
     color: "bg-amber-500/10 text-amber-600 hover:bg-amber-500/20",
   },
   {
-    id: "keyword-recommendation",
-    name: "关键词推荐",
-    icon: <Tags className="h-5 w-5" />,
-    description: "LLM关联词推荐",
-    color: "bg-purple-500/10 text-purple-600 hover:bg-purple-500/20",
-  },
-  {
     id: "analysis",
     name: "专利解析",
     icon: <FileScan className="h-5 w-5" />,
@@ -137,13 +130,6 @@ export function ChatInput({ onSend }: ChatInputProps) {
     // 专利交底书直接进入工作流
     if (selectedTool === "disclosure") {
       onSend?.("开始专利交底书流程", selectedTool);
-      setSelectedTool(null);
-      return;
-    }
-
-    // 关键词推荐直接进入工作流
-    if (selectedTool === "keyword-recommendation") {
-      onSend?.("开始关键词推荐流程", selectedTool);
       setSelectedTool(null);
       return;
     }
