@@ -7,6 +7,7 @@ import {
   Tag,
   Sparkles,
   Image,
+  Binary,
 } from "lucide-react";
 
 export interface TestMenuItem {
@@ -79,6 +80,17 @@ export const testConfig: TestMenuItem[] = [
     icon: Search,
     items: [
       // 预留位置，暂时为空，或者可以加一个待开发的页面
+    ],
+  },
+  {
+    title: "通用服务",
+    icon: Sparkles,
+    items: [
+      {
+        title: "Embedding 测试",
+        url: "/test/common/embedding",
+        icon: Binary,
+      },
     ],
   },
 ];
