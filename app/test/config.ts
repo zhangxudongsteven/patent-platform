@@ -1,4 +1,4 @@
-import { FileText, Search, Type, FileOutput, FileSearch, Tag, Sparkles } from "lucide-react";
+import { FileText, Search, Type, FileOutput, FileSearch, Tag, Sparkles, Image } from "lucide-react";
 
 export interface TestMenuItem {
   title: string;
@@ -41,6 +41,11 @@ export const testConfig: TestMenuItem[] = [
         title: "预保护点生成",
         url: "/test/disclosure/pre-protection-point-generation",
         icon: Sparkles,
+      },
+      {
+        title: "图片检测",
+        url: "/test/disclosure/image-detection",
+        icon: Image,
       },
     ],
   },
