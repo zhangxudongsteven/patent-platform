@@ -11,56 +11,30 @@ import {
   BookOpen,
   RefreshCw,
 } from "lucide-react";
-import type { ContentBlock, KeywordDefinition, AIWarning } from "../types";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { useDisclosureContext } from "../context";
 
-interface Step3TechSolutionProps {
-  contentBlocks: ContentBlock[];
-  setContentBlocks: (blocks: ContentBlock[]) => void;
-  isRewriting: boolean;
-  optimizingBlockId: string | null;
-  keywords: KeywordDefinition[];
-  aiWarnings: AIWarning[];
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-  addContentBlock: (type: "text" | "image") => void;
-  updateContentBlock: (id: string, content: string) => void;
-  deleteContentBlock: (id: string) => void;
-  handleImageUpload: (
-    id: string,
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => void;
-  handleOptimizeBlock: (id: string) => void;
-  handleRedetectImage: (id: string) => void; // 新增：重新检测图片
-  handleAIRewrite: () => void;
-  extractKeywords: () => void;
-  addKeyword: () => void;
-  updateKeyword: (
-    index: number,
-    field: keyof KeywordDefinition,
-    value: string,
-  ) => void;
-  deleteKeyword: (index: number) => void;
-}
+export function Step3TechSolution() {
+  const {
+    contentBlocks,
+    isRewriting,
+    optimizingBlockId,
+    keywords,
+    aiWarnings,
+    addContentBlock,
+    updateContentBlock,
+    deleteContentBlock,
+    handleImageUpload,
+    handleOptimizeBlock,
+    handleRedetectImage,
+    handleAIRewrite,
+    extractKeywords,
+    addKeyword,
+    updateKeyword,
+    deleteKeyword,
+  } = useDisclosureContext();
 
-export function Step3TechSolution({
-  contentBlocks,
-  setContentBlocks,
-  isRewriting,
-  optimizingBlockId,
-  keywords,
-  aiWarnings,
-  fileInputRef,
-  addContentBlock,
-  updateContentBlock,
-  deleteContentBlock,
-  handleImageUpload,
-  handleOptimizeBlock,
-  handleRedetectImage,
-  handleAIRewrite,
-  extractKeywords,
-  addKeyword,
-  updateKeyword,
-  deleteKeyword,
-}: Step3TechSolutionProps) {
   return (
     <div className="space-y-6">
       <div className="rounded-lg border border-border bg-card p-6">
@@ -99,14 +73,14 @@ export function Step3TechSolution({
 
               {block.type === "text" ? (
                 <div className="relative">
-                  <textarea
+                  <Textarea
                     value={block.content}
                     onChange={(e) =>
                       updateContentBlock(block.id, e.target.value)
                     }
                     placeholder="请输入技术方案的详细描述..."
                     rows={6}
-                    className="w-full resize-none rounded border border-border bg-background px-3 py-2 pb-14 text-sm text-foreground outline-none transition-colors focus:border-primary"
+                    className="w-full resize-none pb-14"
                   />
                   <div className="absolute bottom-4 right-2">
                     <Button
@@ -214,14 +188,13 @@ export function Step3TechSolution({
                       )}
 
                       {/* 图片描述输入框 */}
-                      <input
+                      <Input
                         type="text"
                         value={block.content}
                         onChange={(e) =>
                           updateContentBlock(block.id, e.target.value)
                         }
                         placeholder="请输入图片描述..."
-                        className="w-full rounded border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary"
                       />
                     </div>
                   ) : (
@@ -350,25 +323,25 @@ export function Step3TechSolution({
                     className="border-b border-border last:border-0"
                   >
                     <td className="p-2">
-                      <input
+                      <Input
                         type="text"
                         value={kw.term}
                         onChange={(e) =>
                           updateKeyword(index, "term", e.target.value)
                         }
                         placeholder="输入术语"
-                        className="w-full rounded border border-transparent bg-transparent px-2 py-1 text-sm text-foreground hover:border-border focus:border-primary focus:bg-background focus:outline-none"
+                        className="border-transparent bg-transparent hover:border-border focus:bg-background"
                       />
                     </td>
                     <td className="p-2">
-                      <input
+                      <Input
                         type="text"
                         value={kw.definition}
                         onChange={(e) =>
                           updateKeyword(index, "definition", e.target.value)
                         }
                         placeholder="输入释义"
-                        className="w-full rounded border border-transparent bg-transparent px-2 py-1 text-sm text-foreground hover:border-border focus:border-primary focus:bg-background focus:outline-none"
+                        className="border-transparent bg-transparent hover:border-border focus:bg-background"
                       />
                     </td>
                     <td className="p-2 text-center">

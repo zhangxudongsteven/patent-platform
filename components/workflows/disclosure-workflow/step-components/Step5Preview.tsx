@@ -1,31 +1,21 @@
 "use client";
 
 import React from "react";
-import type { ContentBlock, KeywordDefinition } from "../types";
+import { useDisclosureContext } from "../context";
 
-interface Step5PreviewProps {
-  inventionName: string;
-  contactPerson: string;
-  applicationType: "发明" | "实用新型" | "";
-  technicalField: string;
-  techBackground: string;
-  contentBlocks: ContentBlock[];
-  keywords: KeywordDefinition[];
-  beneficialEffects: string;
-  protectionPoints: string;
-}
+export function Step5Preview() {
+  const {
+    inventionName,
+    contactPerson,
+    applicationType,
+    technicalField,
+    techBackground,
+    contentBlocks,
+    keywords,
+    beneficialEffects,
+    protectionPoints,
+  } = useDisclosureContext();
 
-export function Step5Preview({
-  inventionName,
-  contactPerson,
-  applicationType,
-  technicalField,
-  techBackground,
-  contentBlocks,
-  keywords,
-  beneficialEffects,
-  protectionPoints,
-}: Step5PreviewProps) {
   return (
     <div className="space-y-6">
       <div className="rounded-lg border border-border bg-card p-6">
