@@ -5,6 +5,7 @@ import {
   getIPCList,
   getIPCVector,
   deleteIPC,
+  searchSimilarIPCs,
   IPC,
 } from "@/lib/service/ipc";
 import {
@@ -78,7 +79,7 @@ function IPCPageContent() {
   const [pageSize, setPageSize] = useState(pageSizeParam);
   const [searchCode, setSearchCode] = useState(codeParam);
 
-  const [data, setData] = useState<IPC[]>([]);
+  const [data, setData] = useState<(IPC & { similarity?: string })[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -86,6 +87,7 @@ function IPCPageContent() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSemanticSearch, setIsSemanticSearch] = useState(false);
 
   // Form states
   const [code, setCode] = useState("");
@@ -103,6 +105,7 @@ function IPCPageContent() {
   const loadData = async () => {
     setLoading(true);
     try {
+      setIsSemanticSearch(false);
       const result = await getIPCList(page, pageSizeParam, codeParam);
       setData(result.data);
       setTotal(result.total);
@@ -136,6 +139,29 @@ function IPCPageContent() {
 
   const handleSearch = () => {
     updateUrl(1, pageSizeParam, searchCode);
+  };
+
+  const handleSemanticSearch = async () => {
+    if (!searchCode) {
+      toast.error("请输入搜索内容");
+      return;
+    }
+    setLoading(true);
+    try {
+      const results = await searchSimilarIPCs(searchCode, 10);
+      const ipcs = results.map((doc) => ({
+        ...doc.metadata,
+        similarity: doc.metadata.similarity,
+      })) as (IPC & { similarity?: string })[];
+      setData(ipcs);
+      setTotal(ipcs.length);
+      setIsSemanticSearch(true);
+    } catch (error) {
+      toast.error("语义搜索失败");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResetSearch = () => {
@@ -243,8 +269,8 @@ function IPCPageContent() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="搜索 IPC 编号..."
-              className="pl-8 w-full sm:w-[250px]"
+              placeholder="搜索 IPC 编号或语义描述..."
+              className="pl-8 w-full sm:w-[300px]"
               value={searchCode}
               onChange={(e) => setSearchCode(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -264,6 +290,9 @@ function IPCPageContent() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button variant="secondary" onClick={handleSearch}>
               搜索
+            </Button>
+            <Button variant="default" onClick={handleSemanticSearch}>
+              语义搜索
             </Button>
             <Button
               variant="outline"
@@ -456,6 +485,9 @@ function IPCPageContent() {
                 <TableHead>英文描述</TableHead>
                 <TableHead className="w-[150px]">备注</TableHead>
                 <TableHead className="w-[180px]">创建时间</TableHead>
+                {isSemanticSearch && (
+                  <TableHead className="w-[100px]">相似度</TableHead>
+                )}
                 <TableHead className="w-[150px]">操作</TableHead>
               </TableRow>
             </TableHeader>
@@ -463,7 +495,7 @@ function IPCPageContent() {
               {loading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={isSemanticSearch ? 8 : 7}
                     className="text-center h-24 text-muted-foreground"
                   >
                     加载中...
@@ -472,7 +504,7 @@ function IPCPageContent() {
               ) : data.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={isSemanticSearch ? 8 : 7}
                     className="text-center h-24 text-muted-foreground"
                   >
                     暂无数据
@@ -503,6 +535,9 @@ function IPCPageContent() {
                         ? new Date(ipc.created_at).toLocaleString()
                         : "-"}
                     </TableCell>
+                    {isSemanticSearch && (
+                      <TableCell>{ipc.similarity || "-"}</TableCell>
+                    )}
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Button
