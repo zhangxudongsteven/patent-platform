@@ -39,29 +39,31 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className={`${geist.className} ${geistMono.className} font-sans antialiased`}>
+      <body
+        className={`${geist.className} ${geistMono.className} font-sans antialiased`}
+      >
         {children}
-        <Toaster 
+        <Toaster
           position="top-right"
           toastOptions={{
             duration: 3000,
             style: {
-              background: 'var(--background)',
-              color: 'var(--foreground)',
-              border: '1px solid var(--border)',
+              background: "var(--background)",
+              color: "var(--foreground)",
+              border: "1px solid var(--border)",
             },
             success: {
               duration: 3000,
               iconTheme: {
-                primary: 'green',
-                secondary: 'white',
+                primary: "green",
+                secondary: "white",
               },
             },
             error: {
               duration: 4000,
               iconTheme: {
-                primary: 'red',
-                secondary: 'white',
+                primary: "red",
+                secondary: "white",
               },
             },
           }}

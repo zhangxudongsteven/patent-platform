@@ -101,7 +101,7 @@ export function DisclosureWorkflow({
   const callStreamAPI = async (
     url: string,
     body: any,
-    onProgress?: (chunk: string) => void
+    onProgress?: (chunk: string) => void,
   ) => {
     const response = await fetch(url, {
       method: "POST",
@@ -147,9 +147,10 @@ export function DisclosureWorkflow({
         {
           inventionName,
           technicalField,
-          existingProblems: existingProblems || "（未提供具体问题，请根据通用情况分析）",
+          existingProblems:
+            existingProblems || "（未提供具体问题，请根据通用情况分析）",
         },
-        (chunk) => setTechBackground(prev => prev + chunk)
+        (chunk) => setTechBackground((prev) => prev + chunk),
       );
     } catch (error) {
       toast.error("AI生成失败，请点击重新生成按钮");
@@ -190,7 +191,7 @@ export function DisclosureWorkflow({
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
+      reader.onerror = (error) => reject(error);
     });
   };
 
@@ -250,7 +251,7 @@ export function DisclosureWorkflow({
                 imageUrl: url,
                 content: file.name,
                 detectionResult,
-                isDetecting: false
+                isDetecting: false,
               }
             : block,
         ),
@@ -258,12 +259,14 @@ export function DisclosureWorkflow({
 
       // 如果检测不通过，添加到警告列表
       if (!detectionResult.pass) {
-        setAiWarnings(prev => [...prev, {
-          type: "image",
-          message: `图片检测未通过：${detectionResult.reason}`
-        }]);
+        setAiWarnings((prev) => [
+          ...prev,
+          {
+            type: "image",
+            message: `图片检测未通过：${detectionResult.reason}`,
+          },
+        ]);
       }
-
     } catch (error) {
       console.error("图片处理失败:", error);
 
@@ -276,7 +279,7 @@ export function DisclosureWorkflow({
                 ...block,
                 imageUrl: url,
                 content: file.name,
-                isDetecting: false
+                isDetecting: false,
               }
             : block,
         ),
@@ -288,7 +291,7 @@ export function DisclosureWorkflow({
 
   // 重新检测图片
   const handleRedetectImage = async (id: string) => {
-    const block = contentBlocks.find(b => b.id === id);
+    const block = contentBlocks.find((b) => b.id === id);
     if (!block?.imageUrl) return;
 
     setContentBlocks(
@@ -306,7 +309,7 @@ export function DisclosureWorkflow({
             ? {
                 ...block,
                 detectionResult,
-                isDetecting: false
+                isDetecting: false,
               }
             : block,
         ),
@@ -314,17 +317,19 @@ export function DisclosureWorkflow({
 
       // 更新警告列表
       if (!detectionResult.pass) {
-        setAiWarnings(prev => {
-          const filtered = prev.filter(w => !w.message.includes(id));
-          return [...filtered, {
-            type: "image",
-            message: `图片检测未通过：${detectionResult.reason}`
-          }];
+        setAiWarnings((prev) => {
+          const filtered = prev.filter((w) => !w.message.includes(id));
+          return [
+            ...filtered,
+            {
+              type: "image",
+              message: `图片检测未通过：${detectionResult.reason}`,
+            },
+          ];
         });
       } else {
-        setAiWarnings(prev => prev.filter(w => !w.message.includes(id)));
+        setAiWarnings((prev) => prev.filter((w) => !w.message.includes(id)));
       }
-
     } catch (error) {
       console.error("重新检测失败:", error);
       setContentBlocks(
@@ -338,7 +343,7 @@ export function DisclosureWorkflow({
 
   // 单个文本块 AI 优化
   const handleOptimizeBlock = async (id: string) => {
-    const block = contentBlocks.find(b => b.id === id);
+    const block = contentBlocks.find((b) => b.id === id);
     if (!block || !block.content.trim()) {
       toast.error("请先输入要优化的内容");
       return;
@@ -352,7 +357,7 @@ export function DisclosureWorkflow({
         {
           text: block.content,
           optimizationType: "standard",
-        }
+        },
       );
 
       // 更新文本块内容
@@ -369,7 +374,6 @@ export function DisclosureWorkflow({
       );
 
       toast.success("文本优化完成");
-
     } catch (error) {
       toast.error("文本优化失败，请稍后重新点击优化按钮");
     } finally {
@@ -444,7 +448,6 @@ export function DisclosureWorkflow({
       await extractKeywords();
 
       toast.success("AI优化完成");
-
     } catch (error) {
       toast.error("AI优化失败，请稍后重试");
     } finally {
@@ -472,11 +475,10 @@ export function DisclosureWorkflow({
           technicalBackground: techBackground,
           technicalSolution: techSolutionText,
         },
-        (chunk) => setBeneficialEffects(prev => prev + chunk)
+        (chunk) => setBeneficialEffects((prev) => prev + chunk),
       );
 
       toast.success("有益效果生成完成");
-
     } catch (error) {
       toast.error("有益效果生成失败");
     }
@@ -490,11 +492,10 @@ export function DisclosureWorkflow({
           technicalBackground: techBackground,
           technicalSolution: techSolutionText,
         },
-        (chunk) => setProtectionPoints(prev => prev + chunk)
+        (chunk) => setProtectionPoints((prev) => prev + chunk),
       );
 
       toast.success("保护点生成完成");
-
     } catch (error) {
       toast.error("保护点生成失败");
     }
@@ -567,7 +568,6 @@ export function DisclosureWorkflow({
       window.URL.revokeObjectURL(url);
 
       toast.success("文档导出成功！");
-
     } catch (error) {
       console.error("文档导出错误:", error);
       toast.error("文档导出失败，请稍后重试");

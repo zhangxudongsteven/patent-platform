@@ -46,10 +46,7 @@ export function Step4Benefits({
               className="gap-2 bg-transparent"
             >
               <RefreshCw
-                className={cn(
-                  "h-4 w-4",
-                  isGeneratingEffects && "animate-spin",
-                )}
+                className={cn("h-4 w-4", isGeneratingEffects && "animate-spin")}
               />
               重新生成
             </Button>

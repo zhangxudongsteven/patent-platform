@@ -3,7 +3,14 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Plus, X, ImageIcon, Sparkles, BookOpen, RefreshCw } from "lucide-react";
+import {
+  Plus,
+  X,
+  ImageIcon,
+  Sparkles,
+  BookOpen,
+  RefreshCw,
+} from "lucide-react";
 import type { ContentBlock, KeywordDefinition, AIWarning } from "../types";
 
 interface Step3TechSolutionProps {
@@ -135,15 +142,17 @@ export function Step3TechSolution({
                         alt={block.content}
                         className="max-h-64 w-full rounded-lg object-contain"
                       />
-                      
+
                       {/* 图片检测结果 */}
                       {block.detectionResult && (
-                        <div className={cn(
-                          "rounded-lg border p-3",
-                          block.detectionResult.pass 
-                            ? "border-green-500/50 bg-green-500/10" 
-                            : "border-red-500/50 bg-red-500/10"
-                        )}>
+                        <div
+                          className={cn(
+                            "rounded-lg border p-3",
+                            block.detectionResult.pass
+                              ? "border-green-500/50 bg-green-500/10"
+                              : "border-red-500/50 bg-red-500/10",
+                          )}
+                        >
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
                               {block.detectionResult.pass ? (
@@ -176,29 +185,41 @@ export function Step3TechSolution({
                             {block.detectionResult.reason}
                           </p>
                           <div className="mt-2 flex gap-4 text-xs">
-                            <span className={cn(
-                              block.detectionResult.isWhiteBackground
-                                ? "text-green-600"
-                                : "text-red-600"
-                            )}>
-                              背景: {block.detectionResult.isWhiteBackground ? "白色" : "非白色"}
+                            <span
+                              className={cn(
+                                block.detectionResult.isWhiteBackground
+                                  ? "text-green-600"
+                                  : "text-red-600",
+                              )}
+                            >
+                              背景:{" "}
+                              {block.detectionResult.isWhiteBackground
+                                ? "白色"
+                                : "非白色"}
                             </span>
-                            <span className={cn(
-                              block.detectionResult.isBlackLines
-                                ? "text-green-600"
-                                : "text-red-600"
-                            )}>
-                              线条: {block.detectionResult.isBlackLines ? "黑色" : "非黑色"}
+                            <span
+                              className={cn(
+                                block.detectionResult.isBlackLines
+                                  ? "text-green-600"
+                                  : "text-red-600",
+                              )}
+                            >
+                              线条:{" "}
+                              {block.detectionResult.isBlackLines
+                                ? "黑色"
+                                : "非黑色"}
                             </span>
                           </div>
                         </div>
                       )}
-                      
+
                       {/* 图片描述输入框 */}
                       <input
                         type="text"
                         value={block.content}
-                        onChange={(e) => updateContentBlock(block.id, e.target.value)}
+                        onChange={(e) =>
+                          updateContentBlock(block.id, e.target.value)
+                        }
                         placeholder="请输入图片描述..."
                         className="w-full rounded border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary"
                       />
