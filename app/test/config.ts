@@ -96,6 +96,11 @@ export const testConfig: TestMenuItem[] = [
         url: "/test/common/embedding",
         icon: Binary,
       },
+      {
+        title: "IPC 列表",
+        url: "/test/common/ipc",
+        icon: Binary,
+      },
     ],
   },
 ];

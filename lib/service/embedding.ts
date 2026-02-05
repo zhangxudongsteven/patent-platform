@@ -1,13 +1,16 @@
 "use server";
 
 import { OpenAIEmbeddings } from "@langchain/openai";
+import { CallbackHandler } from "@langfuse/langchain";
+import { RunnableLambda } from "@langchain/core/runnables";
+
+const langfuseHandler = new CallbackHandler();
 
 /**
  * 创建 OpenAI Compatible Embedding 模型实例
- * 默认使用 text-embedding-3-small 模型
  */
 const embeddings = new OpenAIEmbeddings({
-  modelName: process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small",
+  modelName: process.env.OPENAI_EMBEDDING_MODEL,
   openAIApiKey: process.env.OPENAI_API_KEY,
   configuration: {
     baseURL: process.env.OPENAI_BASE_URL,
@@ -21,7 +24,9 @@ const embeddings = new OpenAIEmbeddings({
  */
 export async function getEmbedding(text: string): Promise<number[]> {
   try {
-    return await embeddings.embedQuery(text);
+    return await RunnableLambda.from((t: string) =>
+      embeddings.embedQuery(t),
+    ).invoke(text, { callbacks: [langfuseHandler] });
   } catch (error) {
     console.error("Embedding generation failed:", error);
     throw new Error("Failed to generate embedding");
@@ -35,7 +40,9 @@ export async function getEmbedding(text: string): Promise<number[]> {
  */
 export async function getEmbeddings(texts: string[]): Promise<number[][]> {
   try {
-    return await embeddings.embedDocuments(texts);
+    return await RunnableLambda.from((t: string[]) =>
+      embeddings.embedDocuments(t),
+    ).invoke(texts, { callbacks: [langfuseHandler] });
   } catch (error) {
     console.error("Batch embedding generation failed:", error);
     throw new Error("Failed to generate embeddings");
