@@ -1,5 +1,7 @@
 import { useState, useRef } from "react";
-import { toast } from "sonner";
+
+import toast from "react-hot-toast";
+
 import type { ContentBlock, KeywordDefinition, AIWarning } from "./types";
 import { callStreamAPI, fileToBase64, detectImage } from "./service";
 
