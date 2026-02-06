@@ -50,13 +50,6 @@ export default function ConclusionGenerationPage() {
     });
 
   async function handleGenerate() {
-    if (!searchTopic || !searchResults || !keyPatentAnalysis) {
-      toast.error("缺少必要信息", {
-        description: "请填写检索主题、检索结果和关键专利分析",
-      });
-      return;
-    }
-
     try {
       await complete("", {
         body: {
@@ -68,7 +61,6 @@ export default function ConclusionGenerationPage() {
         },
       });
     } catch (err) {
-      // Error is handled in onError
     }
   }
 
@@ -80,11 +72,6 @@ export default function ConclusionGenerationPage() {
   };
 
   const handleClear = () => {
-    setSearchTopic("");
-    setSearchResults("");
-    setKeyPatentAnalysis("");
-    setPatentMap("");
-    setInnovationAssessment("");
     stop();
     setCompletion("");
   };
