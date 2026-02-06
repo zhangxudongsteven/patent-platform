@@ -79,15 +79,15 @@ export const testConfig: TestMenuItem[] = [
         url: "/test/report/keyword-recommendation",
         icon: Tag,
       },
-      {
+        {
         title: "关键词聚类",
         url: "/test/report/keyword-clustering",
         icon: Tag,
       },
-      {
+            {
         title: "检索报告模板导出",
         url: "/test/report/template-export",
-        icon: FileOutput,
+        icon: AlertTriangle,
       },
     ],
   },
