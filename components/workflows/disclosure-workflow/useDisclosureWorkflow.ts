@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import type { ContentBlock, KeywordDefinition, AIWarning } from "./types";
+import type { ContentBlock, KeywordDefinition, AIWarning, ProblemDetectionResult } from "./types";
 import { callStreamAPI, fileToBase64, detectImage } from "./service";
 
 export function useDisclosureWorkflow() {
@@ -30,6 +30,10 @@ export function useDisclosureWorkflow() {
   const [keywords, setKeywords] = useState<KeywordDefinition[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [aiWarnings, setAiWarnings] = useState<AIWarning[]>([]);
+  const [problemDetectionResult, setProblemDetectionResult] = useState<ProblemDetectionResult>({
+    content: "",
+    isLoading: false,
+  });
 
   // Step 4: 有益效果与保护点
   const [beneficialEffects, setBeneficialEffects] = useState("");
@@ -316,6 +320,31 @@ export function useDisclosureWorkflow() {
     }
   };
 
+  // 问题检测
+  const detectProblems = async () => {
+    const techSolutionText = getTechSolutionText();
+    if (!techSolutionText.trim()) {
+      return;
+    }
+
+    setProblemDetectionResult((prev) => ({ ...prev, isLoading: true }));
+
+    try {
+      const result = await callStreamAPI(
+        "/api/disclosure/problem-detection",
+        {
+          technicalSolution: techSolutionText,
+        },
+        (chunk) => setProblemDetectionResult((prev) => ({ ...prev, content: prev.content + chunk })),
+      );
+
+      setProblemDetectionResult({ content: result, isLoading: false });
+    } catch (error) {
+      console.error("问题检测失败:", error);
+      setProblemDetectionResult((prev) => ({ ...prev, isLoading: false }));
+    }
+  };
+
   // AI 风格化改写
   const handleAIRewrite = async () => {
     const textBlocks = contentBlocks
@@ -337,6 +366,9 @@ export function useDisclosureWorkflow() {
 
       // 自动提取关键词
       await extractKeywords();
+
+      // 自动调用问题检测
+      await detectProblems();
 
       toast.success("AI优化完成");
     } catch (error) {
@@ -504,6 +536,7 @@ export function useDisclosureWorkflow() {
     setKeywords,
     fileInputRef,
     aiWarnings,
+    problemDetectionResult,
     beneficialEffects,
     setBeneficialEffects,
     protectionPoints,
@@ -522,6 +555,7 @@ export function useDisclosureWorkflow() {
     handleOptimizeBlock,
     handleAIRewrite,
     extractKeywords,
+    detectProblems,
     addKeyword,
     updateKeyword,
     deleteKeyword,

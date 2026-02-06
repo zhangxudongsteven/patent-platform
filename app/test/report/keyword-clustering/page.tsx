@@ -25,7 +25,6 @@ export default function KeywordClusteringTestPage() {
   const [keywords, setKeywords] = useState(
     "深度学习\n神经网络\n卷积神经网络\n图像识别\n目标检测\n自动驾驶\n激光雷达\n传感器融合\n路径规划\n车联网",
   );
-  const [clusterCount, setClusterCount] = useState(3);
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -59,7 +58,7 @@ export default function KeywordClusteringTestPage() {
 
     try {
       const response = await fetch(
-        `/api/report/keyword-clustering?keywords=${encodeURIComponent(keywords)}&count=${clusterCount}`,
+        `/api/report/keyword-clustering?keywords=${encodeURIComponent(keywords)}`,
       );
 
       const data = await response.json();
@@ -145,22 +144,6 @@ export default function KeywordClusteringTestPage() {
               />
               <p className="text-xs text-muted-foreground">
                 支持使用换行、逗号或顿号分隔多个关键词。
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="clusterCount">期望聚类数量</Label>
-              <Input
-                id="clusterCount"
-                type="number"
-                min="2"
-                max="10"
-                value={clusterCount}
-                onChange={(e) => setClusterCount(Number(e.target.value))}
-                disabled={loading}
-              />
-              <p className="text-xs text-muted-foreground">
-                建议设置在 2-10 之间，具体数量会根据关键词的相关性自动调整。
               </p>
             </div>
 
