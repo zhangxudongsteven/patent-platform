@@ -199,21 +199,6 @@ export default function Home() {
     );
   }
 
-  // 如果正在进行关键词搜索工作流，显示专用页面
-  if (showKeywordSearch) {
-    return (
-      <div className="flex h-screen bg-background">
-        <ChatSidebar />
-        <div className="flex flex-1 flex-col">
-          <KeywordSearchWorkflow
-            initialQuery={searchQuery}
-            onBack={handleBackFromWorkflow}
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
@@ -222,8 +207,7 @@ export default function Home() {
       {/* Main Content */}
       <div className="flex flex-1 flex-col">
         {/* Header */}
-        <header className="flex h-14 items-center justify-end border-b border-border bg-card px-4">
-        </header>
+        <header className="flex h-14 items-center justify-end border-b border-border bg-card px-4"></header>
 
         {/* Chat Area */}
         <main className="flex flex-1 flex-col overflow-hidden">

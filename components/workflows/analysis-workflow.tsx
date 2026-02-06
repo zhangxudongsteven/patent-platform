@@ -133,7 +133,7 @@ export function AnalysisWorkflow({ fileNames, onBack }: AnalysisWorkflowProps) {
                         "relative px-4 py-3 text-sm font-medium transition-all whitespace-nowrap border-b-2",
                         selectedFileIndex === index
                           ? "border-primary text-primary bg-primary/5"
-                          : "border-transparent text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                          : "border-transparent text-muted-foreground hover:text-foreground hover:bg-accent/50",
                       )}
                     >
                       {name}
@@ -174,7 +174,9 @@ export function AnalysisWorkflow({ fileNames, onBack }: AnalysisWorkflowProps) {
                     {analysisSections.map((section, index) => (
                       <div
                         key={index}
-                        className={cn(index !== 0 && "mt-8 border-t border-border pt-8")}
+                        className={cn(
+                          index !== 0 && "mt-8 border-t border-border pt-8",
+                        )}
                       >
                         <div className="mb-4 flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent">
@@ -222,16 +224,21 @@ export function AnalysisWorkflow({ fileNames, onBack }: AnalysisWorkflowProps) {
 
                       <div className="pl-[52px]">
                         <p className="mb-4 text-sm text-foreground/80 leading-relaxed">
-                          综合分析上述{fileNames.length}份专利文档，可以看出该技术领域主要集中在解决复杂环境下的图像识别精度与效率问题。各专利方案在技术手段上各有侧重，但均采用了深度学习与传统图像处理相结合的思路。
+                          综合分析上述{fileNames.length}
+                          份专利文档，可以看出该技术领域主要集中在解决复杂环境下的图像识别精度与效率问题。各专利方案在技术手段上各有侧重，但均采用了深度学习与传统图像处理相结合的思路。
                         </p>
                         <ul className="space-y-2">
                           <li className="flex items-start gap-2 text-sm text-muted-foreground">
                             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" />
-                            <span>共性技术：均引入了注意力机制来增强特征提取能力。</span>
+                            <span>
+                              共性技术：均引入了注意力机制来增强特征提取能力。
+                            </span>
                           </li>
                           <li className="flex items-start gap-2 text-sm text-muted-foreground">
                             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" />
-                            <span>演进趋势：从单纯的算法优化向软硬件协同设计方向发展。</span>
+                            <span>
+                              演进趋势：从单纯的算法优化向软硬件协同设计方向发展。
+                            </span>
                           </li>
                         </ul>
                       </div>
