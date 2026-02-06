@@ -44,6 +44,11 @@ export const testConfig: TestMenuItem[] = [
         icon: Image,
       },
       {
+        title: "问题检测",
+        url: "/test/disclosure/problem-detection",
+        icon: AlertTriangle,
+      },
+      {
         title: "有益效果生成",
         url: "/test/disclosure/beneficial-effect-generation",
         icon: Sparkles,
@@ -52,11 +57,6 @@ export const testConfig: TestMenuItem[] = [
         title: "预保护点生成",
         url: "/test/disclosure/pre-protection-point-generation",
         icon: Sparkles,
-      },
-      {
-        title: "问题检测",
-        url: "/test/disclosure/problem-detection",
-        icon: AlertTriangle,
       },
       {
         title: "交底书模板导出",
@@ -70,21 +70,21 @@ export const testConfig: TestMenuItem[] = [
     icon: FileText,
     items: [
       {
+        title: "关键词推荐",
+        url: "/test/report/keyword-recommendation",
+        icon: Tag,
+      },
+      {
+        title: "关键词聚类",
+        url: "/test/report/keyword-clustering",
+        icon: Tag,
+      },
+      {
         title: "报告结论生成",
         url: "/test/report/conclusion-generation",
         icon: FileOutput,
       },
       {
-        title: "关键词推荐",
-        url: "/test/report/keyword-recommendation",
-        icon: Tag,
-      },
-        {
-        title: "关键词聚类",
-        url: "/test/report/keyword-clustering",
-        icon: Tag,
-      },
-            {
         title: "检索报告模板导出",
         url: "/test/report/template-export",
         icon: AlertTriangle,

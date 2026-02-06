@@ -97,8 +97,12 @@ export default function ReportTemplateExportPage() {
   const [authorizationProspect, setAuthorizationProspect] = useState<
     "高" | "中" | "低" | "无" | ""
   >("高");
-  const [proposalGrade, setProposalGrade] = useState<"A" | "B" | "C" | "不通过" | "">("A");
-  const [conclusion, setConclusion] = useState("根据专利检索分析，本提案技术方案具有较好的创新性和实用性。经过检索发现的相关专利文献中，未发现完全相同的技术方案，现有技术与本提案存在明显差异。该技术方案在相关领域具有较好的应用前景，建议优先推进专利申请工作。");
+  const [proposalGrade, setProposalGrade] = useState<
+    "A" | "B" | "C" | "不通过" | ""
+  >("A");
+  const [conclusion, setConclusion] = useState(
+    "根据专利检索分析，本提案技术方案具有较好的创新性和实用性。经过检索发现的相关专利文献中，未发现完全相同的技术方案，现有技术与本提案存在明显差异。该技术方案在相关领域具有较好的应用前景，建议优先推进专利申请工作。",
+  );
 
   const [isExporting, setIsExporting] = useState(false);
 
@@ -323,7 +327,9 @@ export default function ReportTemplateExportPage() {
                 <Label htmlFor="authorizationProspect">授权前景</Label>
                 <Select
                   value={authorizationProspect}
-                  onValueChange={(value: any) => setAuthorizationProspect(value)}
+                  onValueChange={(value: any) =>
+                    setAuthorizationProspect(value)
+                  }
                 >
                   <SelectTrigger id="authorizationProspect">
                     <SelectValue placeholder="选择授权前景" />

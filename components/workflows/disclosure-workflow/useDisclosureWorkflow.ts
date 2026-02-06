@@ -1,6 +1,11 @@
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import type { ContentBlock, KeywordDefinition, AIWarning, ProblemDetectionResult } from "./types";
+import type {
+  ContentBlock,
+  KeywordDefinition,
+  AIWarning,
+  ProblemDetectionResult,
+} from "./types";
 import { callStreamAPI, fileToBase64, detectImage } from "./service";
 
 export function useDisclosureWorkflow() {
@@ -30,10 +35,11 @@ export function useDisclosureWorkflow() {
   const [keywords, setKeywords] = useState<KeywordDefinition[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [aiWarnings, setAiWarnings] = useState<AIWarning[]>([]);
-  const [problemDetectionResult, setProblemDetectionResult] = useState<ProblemDetectionResult>({
-    content: "",
-    isLoading: false,
-  });
+  const [problemDetectionResult, setProblemDetectionResult] =
+    useState<ProblemDetectionResult>({
+      content: "",
+      isLoading: false,
+    });
 
   // Step 4: 有益效果与保护点
   const [beneficialEffects, setBeneficialEffects] = useState("");
@@ -335,7 +341,11 @@ export function useDisclosureWorkflow() {
         {
           technicalSolution: techSolutionText,
         },
-        (chunk) => setProblemDetectionResult((prev) => ({ ...prev, content: prev.content + chunk })),
+        (chunk) =>
+          setProblemDetectionResult((prev) => ({
+            ...prev,
+            content: prev.content + chunk,
+          })),
       );
 
       setProblemDetectionResult({ content: result, isLoading: false });

@@ -60,8 +60,7 @@ export default function ConclusionGenerationPage() {
           innovationAssessment,
         },
       });
-    } catch (err) {
-    }
+    } catch (err) {}
   }
 
   const handleCopy = () => {
