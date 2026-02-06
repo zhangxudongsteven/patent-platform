@@ -34,7 +34,6 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { testConfig } from "./config";
-import { Toaster } from "@/components/ui/sonner";
 
 export default function TestLayout({
   children,
@@ -155,7 +154,6 @@ export default function TestLayout({
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
       </SidebarInset>
-      <Toaster />
     </SidebarProvider>
   );
 }

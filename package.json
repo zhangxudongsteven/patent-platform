@@ -10,6 +10,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@ai-sdk/langchain": "^2.0.78",
     "@ai-sdk/react": "^3.0.66",
     "@hookform/resolvers": "^3.10.0",
     "@langchain/community": "^1.1.11",

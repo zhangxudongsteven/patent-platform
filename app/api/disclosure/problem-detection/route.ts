@@ -9,10 +9,7 @@ export async function POST(request: NextRequest) {
     const { technicalSolution } = body;
 
     if (!technicalSolution) {
-      return NextResponse.json(
-        { error: "技术方案是必需的" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "技术方案是必需的" }, { status: 400 });
     }
 
     const stream = await streamProblemDetection({

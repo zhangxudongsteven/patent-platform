@@ -293,7 +293,9 @@ export function Step3TechSolution() {
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-red-600" />
-              <h3 className="font-semibold text-red-700 dark:text-red-400">技术方案问题检测</h3>
+              <h3 className="font-semibold text-red-700 dark:text-red-400">
+                技术方案问题检测
+              </h3>
             </div>
             {problemDetectionResult.isLoading && (
               <div className="flex items-center gap-2 text-sm text-red-600">
