@@ -7,6 +7,7 @@ import {
   Tag,
   Sparkles,
   Image,
+  Binary,
 } from "lucide-react";
 
 export interface TestMenuItem {
@@ -72,6 +73,11 @@ export const testConfig: TestMenuItem[] = [
         url: "/test/report/keyword-recommendation",
         icon: Tag,
       },
+      {
+        title: "关键词聚类",
+        url: "/test/report/keyword-clustering",
+        icon: Tag,
+      },
     ],
   },
   {
@@ -79,6 +85,22 @@ export const testConfig: TestMenuItem[] = [
     icon: Search,
     items: [
       // 预留位置，暂时为空，或者可以加一个待开发的页面
+    ],
+  },
+  {
+    title: "通用服务",
+    icon: Sparkles,
+    items: [
+      {
+        title: "Embedding 测试",
+        url: "/test/common/embedding",
+        icon: Binary,
+      },
+      {
+        title: "IPC 列表",
+        url: "/test/common/ipc",
+        icon: Binary,
+      },
     ],
   },
 ];
