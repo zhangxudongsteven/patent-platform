@@ -14,8 +14,13 @@ export interface KeywordDefinition {
 }
 
 export interface AIWarning {
-  type: "unclear" | "brief" | "image" | string; // 添加 string 类型以支持任意字符串
+  type: "unclear" | "brief" | "image" | "problem" | string;
   message: string;
+}
+
+export interface ProblemDetectionResult {
+  problems: string[];
+  hasProblems: boolean;
 }
 
 export interface ImageDetectionResult {

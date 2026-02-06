@@ -30,6 +30,11 @@ export function useDisclosureWorkflow() {
   const [keywords, setKeywords] = useState<KeywordDefinition[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [aiWarnings, setAiWarnings] = useState<AIWarning[]>([]);
+  const [problemDetectionResult, setProblemDetectionResult] = useState<{
+    problems: string[];
+    hasProblems: boolean;
+  } | null>(null);
+  const [isDetectingProblems, setIsDetectingProblems] = useState(false);
 
   // Step 4: 有益效果与保护点
   const [beneficialEffects, setBeneficialEffects] = useState("");
@@ -338,11 +343,79 @@ export function useDisclosureWorkflow() {
       // 自动提取关键词
       await extractKeywords();
 
+      // 自动检测问题
+      await detectProblems();
+
       toast.success("AI优化完成");
     } catch (error) {
       toast.error("AI优化失败，请稍后重试");
     } finally {
       setIsRewriting(false);
+    }
+  };
+
+  // 检测技术方案问题
+  const detectProblems = async () => {
+    const techSolutionText = getTechSolutionText();
+    if (!techSolutionText.trim()) {
+      toast.error("请先输入技术方案内容");
+      return;
+    }
+
+    setIsDetectingProblems(true);
+    setProblemDetectionResult(null);
+
+    try {
+      const response = await fetch("/api/disclosure/problem-detection", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ technicalSolution: techSolutionText }),
+      });
+
+      if (!response.ok) {
+        throw new Error("问题检测失败");
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("无法读取响应流");
+      }
+
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+      }
+
+      // 解析检测结果
+      const problems = fullText
+        .split("\n")
+        .filter((line) => line.trim())
+        .map((line) => line.replace(/^\d+\.\s*/, "").trim())
+        .filter((line) => line.length > 0);
+
+      setProblemDetectionResult({
+        problems,
+        hasProblems: problems.length > 0,
+      });
+
+      if (problems.length > 0) {
+        toast.success(`检测到 ${problems.length} 个问题`);
+      } else {
+        toast.success("未检测到问题");
+      }
+    } catch (error) {
+      console.error("问题检测失败:", error);
+      toast.error("问题检测失败，请稍后重试");
+    } finally {
+      setIsDetectingProblems(false);
     }
   };
 
@@ -504,6 +577,8 @@ export function useDisclosureWorkflow() {
     setKeywords,
     fileInputRef,
     aiWarnings,
+    problemDetectionResult,
+    isDetectingProblems,
     beneficialEffects,
     setBeneficialEffects,
     protectionPoints,
