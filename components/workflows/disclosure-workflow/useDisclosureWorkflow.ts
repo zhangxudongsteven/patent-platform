@@ -266,6 +266,7 @@ export function useDisclosureWorkflow() {
 
       toast.success("文本优化完成");
     } catch (error) {
+      console.error("文本优化失败:", error);
       toast.error("文本优化失败，请稍后重新点击优化按钮");
     } finally {
       setOptimizingBlockId(null);
@@ -343,6 +344,7 @@ export function useDisclosureWorkflow() {
 
       toast.success("AI优化完成");
     } catch (error) {
+      console.error("AI优化失败:", error);
       toast.error("AI优化失败，请稍后重试");
     } finally {
       setIsRewriting(false);
