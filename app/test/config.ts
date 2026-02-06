@@ -63,6 +63,11 @@ export const testConfig: TestMenuItem[] = [
         url: "/test/report/keyword-clustering",
         icon: Tag,
       },
+      {
+        title: "专利检索式生成",
+        url: "/test/report/search-formula-generation",
+        icon: Search,
+      },
     ],
   },
   {
