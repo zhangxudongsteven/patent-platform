@@ -10,10 +10,12 @@ import {
   Sparkles,
   BookOpen,
   RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useDisclosureContext } from "../context";
+import ReactMarkdown from "react-markdown";
 
 export function Step3TechSolution() {
   const {
@@ -22,6 +24,7 @@ export function Step3TechSolution() {
     optimizingBlockId,
     keywords,
     aiWarnings,
+    problemDetectionResult,
     addContentBlock,
     updateContentBlock,
     deleteContentBlock,
@@ -284,6 +287,33 @@ export function Step3TechSolution() {
           </ul>
         </div>
       )}
+
+      {problemDetectionResult.content || problemDetectionResult.isLoading ? (
+        <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <h3 className="font-semibold text-red-700 dark:text-red-400">技术方案问题检测</h3>
+            </div>
+            {problemDetectionResult.isLoading && (
+              <div className="flex items-center gap-2 text-sm text-red-600">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent"></div>
+                <span>检测中...</span>
+              </div>
+            )}
+          </div>
+          {problemDetectionResult.content ? (
+            <div className="prose prose-sm max-w-none dark:prose-invert leading-relaxed">
+              <ReactMarkdown>{problemDetectionResult.content}</ReactMarkdown>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-red-600 border-t-transparent mb-2"></div>
+              <p className="text-sm">正在检测技术方案中存在的问题...</p>
+            </div>
+          )}
+        </div>
+      ) : null}
 
       <div className="rounded-lg border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">

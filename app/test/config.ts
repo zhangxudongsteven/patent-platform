@@ -8,6 +8,7 @@ import {
   Sparkles,
   Image,
   Binary,
+  AlertTriangle,
 } from "lucide-react";
 
 export interface TestMenuItem {
@@ -53,6 +54,11 @@ export const testConfig: TestMenuItem[] = [
         icon: Sparkles,
       },
       {
+        title: "问题检测",
+        url: "/test/disclosure/problem-detection",
+        icon: AlertTriangle,
+      },
+      {
         title: "交底书模板导出",
         url: "/test/disclosure/template-export",
         icon: FileOutput,
@@ -73,10 +79,15 @@ export const testConfig: TestMenuItem[] = [
         url: "/test/report/keyword-recommendation",
         icon: Tag,
       },
-      {
+        {
         title: "关键词聚类",
         url: "/test/report/keyword-clustering",
         icon: Tag,
+      },
+            {
+        title: "检索报告模板导出",
+        url: "/test/report/template-export",
+        icon: AlertTriangle,
       },
     ],
   },
