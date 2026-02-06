@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import type { ContentBlock, KeywordDefinition, AIWarning } from "./types";
+import type { ContentBlock, KeywordDefinition, AIWarning, ProblemDetectionResult } from "./types";
 import { callStreamAPI, fileToBase64, detectImage } from "./service";
 
 export function useDisclosureWorkflow() {
@@ -30,6 +30,10 @@ export function useDisclosureWorkflow() {
   const [keywords, setKeywords] = useState<KeywordDefinition[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [aiWarnings, setAiWarnings] = useState<AIWarning[]>([]);
+  const [problemDetectionResult, setProblemDetectionResult] = useState<ProblemDetectionResult>({
+    content: "",
+    isLoading: false,
+  });
 
   // Step 4: 有益效果与保护点
   const [beneficialEffects, setBeneficialEffects] = useState("");
@@ -266,7 +270,6 @@ export function useDisclosureWorkflow() {
 
       toast.success("文本优化完成");
     } catch (error) {
-      console.error("文本优化失败:", error);
       toast.error("文本优化失败，请稍后重新点击优化按钮");
     } finally {
       setOptimizingBlockId(null);
@@ -317,6 +320,31 @@ export function useDisclosureWorkflow() {
     }
   };
 
+  // 问题检测
+  const detectProblems = async () => {
+    const techSolutionText = getTechSolutionText();
+    if (!techSolutionText.trim()) {
+      return;
+    }
+
+    setProblemDetectionResult((prev) => ({ ...prev, isLoading: true }));
+
+    try {
+      const result = await callStreamAPI(
+        "/api/disclosure/problem-detection",
+        {
+          technicalSolution: techSolutionText,
+        },
+        (chunk) => setProblemDetectionResult((prev) => ({ ...prev, content: prev.content + chunk })),
+      );
+
+      setProblemDetectionResult({ content: result, isLoading: false });
+    } catch (error) {
+      console.error("问题检测失败:", error);
+      setProblemDetectionResult((prev) => ({ ...prev, isLoading: false }));
+    }
+  };
+
   // AI 风格化改写
   const handleAIRewrite = async () => {
     const textBlocks = contentBlocks
@@ -339,79 +367,14 @@ export function useDisclosureWorkflow() {
       // 自动提取关键词
       await extractKeywords();
 
-      // 技术方案生成完成后自动检测问题
+      // 自动调用问题检测
       await detectProblems();
 
       toast.success("AI优化完成");
     } catch (error) {
-      console.error("AI优化失败:", error);
       toast.error("AI优化失败，请稍后重试");
     } finally {
       setIsRewriting(false);
-    }
-  };
-
-  // 检测技术方案问题
-  const detectProblems = async () => {
-    const techSolutionText = getTechSolutionText();
-    if (!techSolutionText.trim()) {
-      toast.error("请先输入技术方案内容");
-      return;
-    }
-
-    setIsDetectingProblems(true);
-    setProblemDetectionResult(null);
-
-    try {
-      const response = await fetch("/api/disclosure/problem-detection", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ technicalSolution: techSolutionText }),
-      });
-
-      if (!response.ok) {
-        throw new Error("问题检测失败");
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error("无法读取响应流");
-      }
-
-      const decoder = new TextDecoder();
-      let fullText = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        fullText += chunk;
-      }
-
-      const problems = fullText
-        .split("\n")
-        .filter((line) => line.trim())
-        .map((line) => line.replace(/^\d+\.\s*/, "").trim())
-        .filter((line) => line.length > 0);
-
-      setProblemDetectionResult({
-        problems,
-        hasProblems: problems.length > 0,
-      });
-
-      if (problems.length > 0) {
-        toast.success(`检测到 ${problems.length} 个问题`);
-      } else {
-        toast.success("未检测到问题");
-      }
-    } catch (error) {
-      console.error("问题检测失败:", error);
-      toast.error("问题检测失败，请稍后重试");
-    } finally {
-      setIsDetectingProblems(false);
     }
   };
 
@@ -573,6 +536,7 @@ export function useDisclosureWorkflow() {
     setKeywords,
     fileInputRef,
     aiWarnings,
+    problemDetectionResult,
     beneficialEffects,
     setBeneficialEffects,
     protectionPoints,
@@ -591,12 +555,12 @@ export function useDisclosureWorkflow() {
     handleOptimizeBlock,
     handleAIRewrite,
     extractKeywords,
+    detectProblems,
     addKeyword,
     updateKeyword,
     deleteKeyword,
     generateBeneficialEffects,
     generateProtectionPoints,
     handleExportDocx,
-    detectProblems,
   };
 }

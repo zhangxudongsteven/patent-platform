@@ -25,4 +25,9 @@ export interface ImageDetectionResult {
   reason: string;
 }
 
+export interface ProblemDetectionResult {
+  content: string;
+  isLoading: boolean;
+}
+
 export type Step = 1 | 2 | 3 | 4 | 5;

@@ -11,11 +11,11 @@ import {
   BookOpen,
   RefreshCw,
   AlertTriangle,
-  CheckCircle2,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useDisclosureContext } from "../context";
+import ReactMarkdown from "react-markdown";
 
 export function Step3TechSolution() {
   const {
@@ -25,7 +25,6 @@ export function Step3TechSolution() {
     keywords,
     aiWarnings,
     problemDetectionResult,
-    isDetectingProblems,
     addContentBlock,
     updateContentBlock,
     deleteContentBlock,
@@ -289,68 +288,32 @@ export function Step3TechSolution() {
         </div>
       )}
 
-      {isDetectingProblems && (
-        <div className="rounded-lg border border-blue-500/50 bg-blue-500/10 p-4">
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
-            <h3 className="font-medium text-blue-700 dark:text-blue-400">
-              正在检测技术方案问题...
-            </h3>
-          </div>
-        </div>
-      )}
-
-      {problemDetectionResult && (
-        <div
-          className={cn(
-            "rounded-lg border p-4",
-            problemDetectionResult.hasProblems
-              ? "border-red-500/50 bg-red-500/10"
-              : "border-green-500/50 bg-green-500/10",
-          )}
-        >
-          <div className="mb-3 flex items-center justify-between">
+      {problemDetectionResult.content || problemDetectionResult.isLoading ? (
+        <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-6">
+          <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {problemDetectionResult.hasProblems ? (
-                <>
-                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                  <h3 className="font-medium text-red-700 dark:text-red-400">
-                    检测到技术方案问题
-                  </h3>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  <h3 className="font-medium text-green-700 dark:text-green-400">
-                    技术方案检测通过
-                  </h3>
-                </>
-              )}
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <h3 className="font-semibold text-red-700 dark:text-red-400">技术方案问题检测</h3>
             </div>
-            <span className="text-sm text-muted-foreground">
-              {problemDetectionResult.problems.length} 个问题
-            </span>
+            {problemDetectionResult.isLoading && (
+              <div className="flex items-center gap-2 text-sm text-red-600">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent"></div>
+                <span>检测中...</span>
+              </div>
+            )}
           </div>
-
-          {problemDetectionResult.hasProblems ? (
-            <ul className="space-y-2">
-              {problemDetectionResult.problems.map((problem, index) => (
-                <li
-                  key={index}
-                  className="flex items-start gap-2 text-sm text-red-700 dark:text-red-400"
-                >
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-red-600 flex-shrink-0" />
-                  <span>{problem}</span>
-                </li>
-              ))}
-            </ul>
+          {problemDetectionResult.content ? (
+            <div className="prose prose-sm max-w-none dark:prose-invert leading-relaxed">
+              <ReactMarkdown>{problemDetectionResult.content}</ReactMarkdown>
+            </div>
           ) : (
-            <p className="text-sm text-green-700 dark:text-green-400">
-              技术方案描述清晰，未发现常见问题。
-            </p>
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-red-600 border-t-transparent mb-2"></div>
+              <p className="text-sm">正在检测技术方案中存在的问题...</p>
+            </div>
           )}
         </div>
-      )}
+      ) : null}
 
       <div className="rounded-lg border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
