@@ -3,11 +3,11 @@ import {
   Search,
   Type,
   FileOutput,
-  FileSearch,
   Tag,
   Sparkles,
   Image,
   Binary,
+  MessageSquare,
   AlertTriangle,
 } from "lucide-react";
 
@@ -88,6 +88,17 @@ export const testConfig: TestMenuItem[] = [
         title: "检索报告模板导出",
         url: "/test/report/template-export",
         icon: AlertTriangle,
+      },
+    ],
+  },
+  {
+    title: "专利知识问答",
+    icon: MessageSquare,
+    items: [
+      {
+        title: "专利知识问答助手",
+        url: "/test/qa",
+        icon: MessageSquare,
       },
     ],
   },
