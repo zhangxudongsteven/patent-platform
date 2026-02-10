@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChatSidebar } from "@/components/chat-sidebar";
 import { ChatInput } from "@/components/chat-input";
 import { ChatMessage, type Message } from "@/components/chat-message";
@@ -10,6 +10,9 @@ import { DisclosureWorkflow } from "@/components/workflows/disclosure-workflow";
 import { AnalysisWorkflow } from "@/components/workflows/analysis-workflow";
 import { KeywordSearchWorkflow } from "@/components/workflows/keyword-search-workflow";
 import { Button } from "@/components/ui/button";
+import { streamQAAnswer } from "@/lib/service/chat";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 // 工具名称映射
 const toolNames: Record<string, string> = {
@@ -43,6 +46,7 @@ const getAIResponse = (userMessage: string, tool?: string): string => {
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [showSearchFormula, setShowSearchFormula] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showDisclosure, setShowDisclosure] = useState(false);
@@ -51,8 +55,18 @@ export default function Home() {
   const [uploadedFileNames, setUploadedFileNames] = useState<string[]>([]);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  const handleSendMessage = (content: string, tool?: string) => {
+  // 自动滚动到底部
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [messages, isLoading]);
+
+  const handleSendMessage = async (content: string, tool?: string) => {
+    if (isLoading) return;
+
     // 如果是专利检索工具，直接打开关键词搜索工作流页面
     if (tool === "patent-search") {
       setSearchQuery(content);
@@ -102,16 +116,69 @@ export default function Home() {
 
     setMessages((prev) => [...prev, userMessage]);
 
-    // 模拟 AI 回复（延迟500ms）
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: getAIResponse(content, tool),
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-    }, 500);
+    // 如果有具体的 tool（但没有触发工作流），使用静态引导回复
+    if (tool) {
+      setTimeout(() => {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: getAIResponse(content, tool),
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+      }, 500);
+      return;
+    }
+
+    // 默认对话模式：调用 Server Action
+    setIsLoading(true);
+    try {
+      // 准备历史记录 (去除当前这条，因为 Server Action 签名是 question + history)
+      // 注意：这里 history 应该包含之前的 user 和 assistant 消息
+      const history = messages.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      }));
+
+      const stream = await streamQAAnswer(content, history);
+
+      const assistantMsgId = (Date.now() + 1).toString();
+      let assistantContent = "";
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMsgId,
+          role: "assistant",
+          content: "",
+          timestamp: new Date(),
+        },
+      ]);
+
+      for await (const chunk of stream) {
+        if (chunk) {
+          assistantContent += chunk;
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            const lastIndex = newMessages.findIndex(
+              (m) => m.id === assistantMsgId,
+            );
+            if (lastIndex !== -1) {
+              newMessages[lastIndex] = {
+                ...newMessages[lastIndex],
+                content: assistantContent,
+              };
+            }
+            return newMessages;
+          });
+        }
+      }
+    } catch (error) {
+      console.error("对话出错:", error);
+      toast.error("发生错误，请稍后重试");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBackFromWorkflow = () => {
@@ -122,6 +189,13 @@ export default function Home() {
     setShowKeywordSearch(false);
     setUploadedFileName("");
     setSearchQuery("");
+  };
+
+  const handleNewChat = () => {
+    setMessages([]);
+    handleBackFromWorkflow();
+    setUploadedFileNames([]);
+    toast.success("对话已重置");
   };
 
   // 如果正在进行专利检索式工作流，显示专用页面
@@ -202,7 +276,7 @@ export default function Home() {
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
-      <ChatSidebar />
+      <ChatSidebar onNewChat={handleNewChat} />
 
       {/* Main Content */}
       <div className="flex flex-1 flex-col">
@@ -211,7 +285,7 @@ export default function Home() {
 
         {/* Chat Area */}
         <main className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
             {messages.length === 0 ? (
               /* Welcome Message */
               <div className="flex h-full flex-col items-center justify-center text-center px-4">
@@ -239,6 +313,26 @@ export default function Home() {
                 {messages.map((message) => (
                   <ChatMessage key={message.id} message={message} />
                 ))}
+                {isLoading &&
+                  messages[messages.length - 1]?.role === "user" && (
+                    <div className="flex w-full gap-4 px-4 py-6 bg-muted/30">
+                      <div className="flex w-full max-w-3xl mx-auto gap-4">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-foreground">
+                              专利智能助手
+                            </span>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            正在思考...
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
               </div>
             )}
           </div>

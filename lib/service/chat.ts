@@ -1,3 +1,5 @@
+"use server";
+
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { StringOutputParser } from "@langchain/core/output_parsers";
@@ -102,5 +104,12 @@ export async function streamQAAnswer(
     },
   );
 
-  return stream;
+  // Convert to a plain AsyncGenerator to ensure it can be serialized by Next.js Server Actions
+  async function* generator() {
+    for await (const chunk of stream) {
+      yield chunk;
+    }
+  }
+
+  return generator();
 }

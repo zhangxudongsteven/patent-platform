@@ -91,7 +91,7 @@ const initialFolders: FolderData[] = [
   },
 ];
 
-export function ChatSidebar() {
+export function ChatSidebar({ onNewChat }: { onNewChat?: () => void }) {
   const [folders, setFolders] = useState<FolderData[]>(initialFolders);
   const [activeChat, setActiveChat] = useState<string>("g1");
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -121,6 +121,7 @@ export function ChatSidebar() {
           <Button
             variant="ghost"
             size="icon"
+            onClick={onNewChat}
             className="h-9 w-9 text-sidebar-foreground hover:bg-sidebar-accent"
           >
             <Plus className="h-4 w-4" />
@@ -172,7 +173,10 @@ export function ChatSidebar() {
 
       {/* New Chat Button */}
       <div className="p-3">
-        <Button className="w-full justify-start gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button
+          className="w-full justify-start gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          onClick={onNewChat}
+        >
           <Plus className="h-4 w-4" />
           新建对话
         </Button>

@@ -83,10 +83,18 @@ const FORMAT2_REQUIREMENTS = `1. 生成仅包含关键词的检索式，绝对�
 6. 示例：TIAB=(蓝牙 AND 扭矩扳手)
 7. 重要：此格式只包含关键词，不包含任何IPC或CPC分类号`;
 
-const keywordExtensionPromptTemplate = ChatPromptTemplate.fromTemplate(KEYWORD_EXTENSION_TEMPLATE);
-const keywordRelationPromptTemplate = ChatPromptTemplate.fromTemplate(KEYWORD_RELATION_TEMPLATE);
-const ipcRecommendationPromptTemplate = ChatPromptTemplate.fromTemplate(IPC_RECOMMENDATION_TEMPLATE);
-const formulaPromptTemplate = ChatPromptTemplate.fromTemplate(FORMULA_GENERATION_TEMPLATE);
+const keywordExtensionPromptTemplate = ChatPromptTemplate.fromTemplate(
+  KEYWORD_EXTENSION_TEMPLATE,
+);
+const keywordRelationPromptTemplate = ChatPromptTemplate.fromTemplate(
+  KEYWORD_RELATION_TEMPLATE,
+);
+const ipcRecommendationPromptTemplate = ChatPromptTemplate.fromTemplate(
+  IPC_RECOMMENDATION_TEMPLATE,
+);
+const formulaPromptTemplate = ChatPromptTemplate.fromTemplate(
+  FORMULA_GENERATION_TEMPLATE,
+);
 
 const model = new ChatOpenAI({
   modelName: process.env.OPENAI_CHAT_MODEL,
@@ -126,11 +134,18 @@ const formulaGenerationChain = RunnableSequence.from([
   stringOutputParser,
 ]);
 
-export async function extendKeywords(coreKeywords: string[]): Promise<string[]> {
+export async function extendKeywords(
+  coreKeywords: string[],
+): Promise<string[]> {
   try {
     const keywordsStr = coreKeywords.join("、");
-    const result = await keywordExtensionChain.invoke({ coreKeywords: keywordsStr });
-    const extendedKeywords = result.split("、").map(k => k.trim()).filter(k => k);
+    const result = await keywordExtensionChain.invoke({
+      coreKeywords: keywordsStr,
+    });
+    const extendedKeywords = result
+      .split("、")
+      .map((k) => k.trim())
+      .filter((k) => k);
     return extendedKeywords.slice(0, 5);
   } catch (error) {
     console.error("关键词扩展时发生错误:", error);
@@ -139,7 +154,7 @@ export async function extendKeywords(coreKeywords: string[]): Promise<string[]> 
 }
 
 export async function analyzeKeywordRelations(
-  keywords: string[]
+  keywords: string[],
 ): Promise<Array<{ keywords: string[]; operator: "AND" | "OR" }>> {
   try {
     const keywordsStr = keywords.join("、");
@@ -152,9 +167,9 @@ export async function analyzeKeywordRelations(
   }
 }
 
-export async function recommendIPC(technicalTopic: string): Promise<
-  Array<{ code: string; description: string }>
-> {
+export async function recommendIPC(
+  technicalTopic: string,
+): Promise<Array<{ code: string; description: string }>> {
   try {
     const result = await ipcRecommendationChain.invoke({ technicalTopic });
     const ipcList = JSON.parse(result);
@@ -179,9 +194,7 @@ export async function generateFormula(params: {
     const ipcCodesStr = ipcCodes.join("、");
 
     const formatRequirements =
-      outputFormat === "format1"
-        ? FORMAT1_REQUIREMENTS
-        : FORMAT2_REQUIREMENTS;
+      outputFormat === "format1" ? FORMAT1_REQUIREMENTS : FORMAT2_REQUIREMENTS;
 
     const formula = await formulaGenerationChain.invoke({
       keywords: keywordsStr,
@@ -210,9 +223,7 @@ export async function streamFormula(params: {
     const ipcCodesStr = ipcCodes.join("、");
 
     const formatRequirements =
-      outputFormat === "format1"
-        ? FORMAT1_REQUIREMENTS
-        : FORMAT2_REQUIREMENTS;
+      outputFormat === "format1" ? FORMAT1_REQUIREMENTS : FORMAT2_REQUIREMENTS;
 
     const stream = await formulaGenerationChain.stream({
       keywords: keywordsStr,

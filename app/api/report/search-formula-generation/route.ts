@@ -11,28 +11,28 @@ export async function POST(request: NextRequest) {
     if (!keywords || !ipcCodes) {
       return NextResponse.json(
         { error: "缺少必要参数：keywords 和 ipcCodes" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!Array.isArray(keywords) || keywords.length === 0) {
       return NextResponse.json(
         { error: "keywords 必须是非空数组" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!Array.isArray(ipcCodes) || ipcCodes.length === 0) {
       return NextResponse.json(
         { error: "ipcCodes 必须是非空数组" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (outputFormat && !["format1", "format2"].includes(outputFormat)) {
       return NextResponse.json(
         { error: "outputFormat 必须是 'format1' 或 'format2'" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,14 +44,16 @@ export async function POST(request: NextRequest) {
 
     if (stream) {
       const result = await streamFormula(params);
-      
+
       const encoder = new TextEncoder();
       const streamResponse = new ReadableStream({
         async start(controller) {
           try {
             for await (const chunk of result.stream) {
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ type: "formula", content: chunk })}\n\n`)
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: "formula", content: chunk })}\n\n`,
+                ),
               );
             }
             controller.close();
@@ -65,7 +67,7 @@ export async function POST(request: NextRequest) {
         headers: {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
+          Connection: "keep-alive",
         },
       });
     } else {
@@ -74,10 +76,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error("检索式生成API错误:", error);
-    return NextResponse.json(
-      { error: "检索式生成失败" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "检索式生成失败" }, { status: 500 });
   }
 }
 
@@ -90,7 +89,8 @@ export async function GET(request: NextRequest) {
       parameters: {
         keywords: "关键词列表（数组）",
         ipcCodes: "IPC/CPC分类号列表（数组）",
-        outputFormat: "输出格式：'format1'（关键词+IPC/CPC）或 'format2'（仅关键词）（可选，默认'format1'）",
+        outputFormat:
+          "输出格式：'format1'（关键词+IPC/CPC）或 'format2'（仅关键词）（可选，默认'format1'）",
         stream: "是否使用流式输出（布尔值，可选）",
       },
       response: {
