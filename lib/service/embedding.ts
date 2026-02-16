@@ -48,3 +48,79 @@ export async function getEmbeddings(texts: string[]): Promise<number[][]> {
     throw new Error("Failed to generate embeddings");
   }
 }
+
+export async function getImageEmbedding(image: string): Promise<number[]> {
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error("Missing API Key (OPENAI_API_KEY)");
+    }
+
+    const model = process.env.OPENAI_IMAGE_EMBEDDING_MODEL || "";
+
+    // Construct the API endpoint
+    let endpoint = process.env.OPENAI_IMAGE_EMBEDDING_BASE_URL || "";
+
+    // If we want to reuse OPENAI_BASE_URL but no specific image embedding url is provided:
+    // We assume the user configures OPENAI_IMAGE_EMBEDDING_BASE_URL if they need a custom path.
+    // Otherwise we stick to the default DashScope endpoint or the one explicitly provided in env.
+
+    // Validate image format based on DashScope requirements:
+    // 1. Public URL
+    // 2. Base64 Data URI: data:image/{format};base64,{data}
+    if (!image.startsWith("http") && !image.startsWith("data:image/")) {
+      console.warn(
+        "Image input does not appear to be a URL or Data URI. DashScope requires 'data:image/{format};base64,{data}' for Base64 inputs.",
+      );
+    }
+
+    const payload = {
+      model: model,
+      input: {
+        // DashScope Multimodal Embedding Input Format:
+        // contents: array of objects or strings.
+        // For image: { "image": "url_or_data_uri" }
+        // For fused embedding (text+image), put them in the same object: { "text": "...", "image": "..." }
+        // For independent embeddings, put them in separate objects: [ { "text": "..." }, { "image": "..." } ]
+        // Here we only generate embedding for a single image.
+        contents: [{ image: image }],
+      },
+      parameters: {
+        dimension: 1024,
+      },
+    };
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("DashScope API Error:", response.status, errorText);
+      throw new Error(
+        `DashScope API request failed: ${response.status} ${errorText}`,
+      );
+    }
+
+    const data = await response.json();
+
+    if (
+      data.output &&
+      data.output.embeddings &&
+      data.output.embeddings.length > 0
+    ) {
+      return data.output.embeddings[0].embedding;
+    } else {
+      console.error("Unexpected DashScope response format:", data);
+      throw new Error("Invalid response format from DashScope");
+    }
+  } catch (error) {
+    console.error("Image embedding generation failed:", error);
+    throw new Error("Failed to generate image embedding");
+  }
+}

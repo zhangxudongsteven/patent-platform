@@ -128,6 +128,11 @@ export const testConfig: TestMenuItem[] = [
         url: "/test/common/ipc",
         icon: Binary,
       },
+      {
+        title: "OSS 文件管理",
+        url: "/test/common/oss",
+        icon: Binary, // Using Binary icon as placeholder, or could use Folder/FileText
+      },
     ],
   },
 ];
