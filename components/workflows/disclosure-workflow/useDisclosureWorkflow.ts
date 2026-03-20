@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import type {
   ContentBlock,
@@ -8,8 +8,8 @@ import type {
 } from "./types";
 import { callStreamAPI, fileToBase64, detectImage } from "./service";
 
-export function useDisclosureWorkflow() {
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+export function useDisclosureWorkflow(initialStep?: 1 | 2 | 3 | 4 | 5, initialData?: any, chatId?: string) {
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(initialStep || 1);
 
   // Step 1: 基本信息
   const [inventionName, setInventionName] = useState("");
@@ -51,6 +51,51 @@ export function useDisclosureWorkflow() {
 
   // Step 5: 导出状态
   const [isExporting, setIsExporting] = useState(false);
+
+  // 当 chatId 变化时，重置所有状态
+  useEffect(() => {
+    console.log('chatId changed, resetting all states', chatId);
+    setInventionName("");
+    setContactPerson("");
+    setApplicationType("");
+    setTechnicalField("");
+    setTechBackground("");
+    setExistingProblems("");
+    setContentBlocks([{ id: "1", type: "text", content: "" }]);
+    setKeywords([]);
+    setAiWarnings([]);
+    setProblemDetectionResult({ content: "", isLoading: false });
+    setBeneficialEffects("");
+    setProtectionPoints("");
+    setIsGeneratingBackground(false);
+    setIsGeneratingBeneficialEffects(false);
+    setIsGeneratingProtectionPoints(false);
+    setIsExporting(false);
+  }, [chatId]);
+
+  // 从初始数据恢复状态
+  useEffect(() => {
+    if (initialData) {
+      try {
+        const parsedData = typeof initialData === 'string' ? JSON.parse(initialData) : initialData;
+        
+        if (parsedData.inventionName) setInventionName(parsedData.inventionName);
+        if (parsedData.contactPerson) setContactPerson(parsedData.contactPerson);
+        if (parsedData.applicationType) setApplicationType(parsedData.applicationType);
+        if (parsedData.technicalField) setTechnicalField(parsedData.technicalField);
+        if (parsedData.techBackground) setTechBackground(parsedData.techBackground);
+        if (parsedData.existingProblems) setExistingProblems(parsedData.existingProblems);
+        if (parsedData.contentBlocks) setContentBlocks(parsedData.contentBlocks);
+        if (parsedData.keywords) setKeywords(parsedData.keywords);
+        if (parsedData.beneficialEffects) setBeneficialEffects(parsedData.beneficialEffects);
+        if (parsedData.protectionPoints) setProtectionPoints(parsedData.protectionPoints);
+        if (parsedData.problemDetectionResult) setProblemDetectionResult(parsedData.problemDetectionResult);
+        if (parsedData.aiWarnings) setAiWarnings(parsedData.aiWarnings);
+      } catch (e) {
+        console.error("Failed to parse initial data:", e);
+      }
+    }
+  }, [initialData]);
 
   // 获取技术方案文本
   const getTechSolutionText = () => {
@@ -521,6 +566,87 @@ export function useDisclosureWorkflow() {
     }
   };
 
+  // 保存工作流状态到历史记录
+  const saveWorkflowState = async (chatId?: string) => {
+    console.log('saveWorkflowState called with chatId:', chatId);
+    
+    const workflowData = {
+      inventionName,
+      contactPerson,
+      applicationType,
+      technicalField,
+      techBackground,
+      existingProblems,
+      contentBlocks,
+      keywords,
+      beneficialEffects,
+      protectionPoints,
+      problemDetectionResult,
+      aiWarnings,
+      step,
+    };
+
+    const historyData = {
+      operation_title: inventionName || "专利交底书",
+      operation_type: "disclosure",
+      operation_content: JSON.stringify(workflowData),
+      operation_result: JSON.stringify({
+        step,
+        hasBasicInfo: !!(inventionName && technicalField),
+        hasBackground: !!techBackground,
+        hasSolution: contentBlocks.some(b => b.content.trim()),
+        hasBenefits: !!beneficialEffects,
+        hasProtectionPoints: !!protectionPoints,
+      }),
+      folder_id: "disclosure",
+      workflow_step: step,
+      chat_id: chatId,
+    };
+
+    try {
+      let response;
+      if (chatId) {
+        console.log('Updating existing record with chatId:', chatId);
+        // 更新现有记录
+        response = await fetch(`/api/history/chat/${chatId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(historyData),
+        });
+        
+        // 如果更新失败（记录不存在），改用 POST 创建新记录
+        if (!response.ok) {
+          console.log('Update failed with status:', response.status, 'falling back to POST');
+          response = await fetch("/api/history", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(historyData),
+          });
+        }
+      } else {
+        console.log('Creating new record');
+        // 创建新记录
+        response = await fetch("/api/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(historyData),
+        });
+      }
+
+      if (response.ok) {
+        console.log('Save successful, dispatching history-updated event');
+        window.dispatchEvent(new CustomEvent('history-updated'));
+        const result = await response.json();
+        console.log('Save result:', result);
+        return result.data?.chat_id;
+      } else {
+        console.error('Save failed with status:', response.status);
+      }
+    } catch (error) {
+      console.error("保存工作流状态失败:", error);
+    }
+  };
+
   return {
     // State
     step,
@@ -572,5 +698,6 @@ export function useDisclosureWorkflow() {
     generateBeneficialEffects,
     generateProtectionPoints,
     handleExportDocx,
+    saveWorkflowState,
   };
 }

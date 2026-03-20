@@ -15,6 +15,7 @@ import {
   Upload,
   X,
   Search,
+  Square,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -66,9 +67,13 @@ const tools: Tool[] = [
 
 interface ChatInputProps {
   onSend?: (message: string, tool?: string) => void;
+  isLoading?: boolean;
+  onStop?: () => void;
 }
 
-export function ChatInput({ onSend }: ChatInputProps) {
+export function ChatInput({ onSend, isLoading, onStop }: ChatInputProps) {
+  console.log('ChatInput rendering, onSend type:', typeof onSend, 'onSend:', onSend);
+  
   const [message, setMessage] = useState("");
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -126,13 +131,8 @@ export function ChatInput({ onSend }: ChatInputProps) {
   };
 
   const handleSend = () => {
-    // 专利交底书直接进入工作流
-    if (selectedTool === "disclosure") {
-      onSend?.("开始专利交底书流程", selectedTool);
-      setSelectedTool(null);
-      return;
-    }
-
+    console.log('handleSend called', { selectedTool, message, uploadedFiles, needsFileUpload });
+    
     if (needsFileUpload && uploadedFiles.length > 0) {
       const fileNames = uploadedFiles.map((f) => f.name).join("、");
       onSend?.(`已上传文件：${fileNames}`, selectedTool || undefined);
@@ -302,9 +302,12 @@ export function ChatInput({ onSend }: ChatInputProps) {
               <button
                 key={tool.id}
                 onClick={() => {
-                  // 专利交底书直接触发工作流
+                  console.log('Tool button clicked', { toolId: tool.id, onSendExists: !!onSend });
                   if (tool.id === "disclosure") {
-                    onSend?.("开始专利交底书流程", "disclosure");
+                    console.log('Opening disclosure workflow from tool button');
+                    console.log('Calling onSend with:', "开始专利交底书流程", tool.id);
+                    onSend?.("开始专利交底书流程", tool.id);
+                    console.log('onSend called');
                     return;
                   }
                   setSelectedTool(selectedTool === tool.id ? null : tool.id);
@@ -324,21 +327,35 @@ export function ChatInput({ onSend }: ChatInputProps) {
 
           {/* Right Side - Actions */}
           <div className="flex items-center gap-2">
-            <Button
-              onClick={handleSend}
-              disabled={
-                needsFileUpload ? uploadedFiles.length === 0 : !message.trim()
-              }
-              size="icon"
-              className={cn(
-                "h-9 w-9 rounded-full transition-all",
-                (needsFileUpload ? uploadedFiles.length > 0 : message.trim())
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "bg-muted text-muted-foreground",
-              )}
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+            {isLoading ? (
+              <Button
+                onClick={onStop}
+                size="icon"
+                className="h-9 w-9 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-all"
+              >
+                <Square className="h-4 w-4" />
+              </Button>
+            ) : selectedTool !== "disclosure" ? (
+              <Button
+                onClick={handleSend}
+                disabled={
+                  needsFileUpload ? uploadedFiles.length === 0 : !message.trim()
+                }
+                size="icon"
+                className={cn(
+                  "h-9 w-9 rounded-full transition-all",
+                  needsFileUpload
+                    ? uploadedFiles.length > 0
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "bg-muted text-muted-foreground"
+                    : message.trim()
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>
