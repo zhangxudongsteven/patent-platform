@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, CheckCircle, FileDown, RefreshCw } from "lucide-react";
@@ -10,15 +10,25 @@ import { Step3TechSolution } from "@/components/workflows/disclosure-workflow/st
 import { Step4Benefits } from "@/components/workflows/disclosure-workflow/step-components/Step4Benefits";
 import { Step5Preview } from "@/components/workflows/disclosure-workflow/step-components/Step5Preview";
 import { DisclosureProvider, useDisclosureContext } from "./context";
-
 interface DisclosureWorkflowProps {
-  fileName: string;
+  fileName?: string;
   onBack: () => void;
-}
-
-function DisclosureWorkflowContent({ onBack }: { onBack: () => void }) {
-  const { step, setStep, handleExportDocx, isExporting } =
+  initialStep?: 1 | 2 | 3 | 4 | 5;
+  initialData?: any;
+  chatId?: string;
+};
+function DisclosureWorkflowContent({ onBack, chatId }: { onBack: () => void; chatId?: string }) {
+  const { step, setStep, handleExportDocx, isExporting, saveWorkflowState } =
     useDisclosureContext();
+
+  // 当步骤变化时，使用正确的 chatId 保存
+  useEffect(() => {
+    console.log('DisclosureWorkflowContent useEffect triggered', { step, chatId });
+    if (chatId && step >= 1) {
+      console.log('Saving workflow state with chatId:', chatId);
+      saveWorkflowState(chatId);
+    }
+  }, [step, chatId, saveWorkflowState]);
 
   return (
     <div className="flex h-full flex-col bg-background">
@@ -147,10 +157,13 @@ function DisclosureWorkflowContent({ onBack }: { onBack: () => void }) {
 export function DisclosureWorkflow({
   fileName,
   onBack,
+  initialStep,
+  initialData,
+  chatId,
 }: DisclosureWorkflowProps) {
   return (
-    <DisclosureProvider>
-      <DisclosureWorkflowContent onBack={onBack} />
+    <DisclosureProvider initialStep={initialStep} initialData={initialData} chatId={chatId}>
+      <DisclosureWorkflowContent onBack={onBack} chatId={chatId} />
     </DisclosureProvider>
   );
 }

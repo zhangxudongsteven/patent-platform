@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -164,32 +164,239 @@ const mockPatents: PatentItem[] = [
   },
 ];
 
-export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+interface ReportWorkflowProps {
+  fileName: string;
+  onBack: () => void;
+  chatId?: string;
+}
 
-  // 提案名称（自动生成，可修改）- 移到步骤4
-  const [proposalName, setProposalName] = useState(() => {
-    const date = new Date();
-    const dateStr = date
-      .toLocaleDateString("zh-CN", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      })
-      .replace(/\//g, "-");
-    return `专利检索报告-${fileName.replace(/\.[^/.]+$/, "")}-${dateStr}`;
-  });
+type ReportWorkflowContextType = {
+  step: 1 | 2 | 3 | 4 | 5;
+  setStep: (step: 1 | 2 | 3 | 4 | 5) => void;
+  proposalName: string;
+  setProposalName: (name: string) => void;
+  ipcList: IPCItem[];
+  setIPCList: (list: IPCItem[]) => void;
+  keywords: KeywordItem[];
+  setKeywords: (list: KeywordItem[]) => void;
+  selectedTemplate: string | null;
+  setSelectedTemplate: (template: string | null) => void;
+  generatedFormula: string;
+  setGeneratedFormula: (formula: string) => void;
+  selectedPatents: string[];
+  setSelectedPatents: (patents: string[]) => void;
+  searchResults: PatentItem[];
+  setSearchResults: (results: PatentItem[]) => void;
+  originalSearchResults: PatentItem[];
+  setOriginalSearchResults: (results: PatentItem[]) => void;
+  standardAdaptation: boolean;
+  setStandardAdaptation: (value: boolean) => void;
+  vehicleApplication: boolean;
+  setVehicleApplication: (value: boolean) => void;
+  usageProspect: "高" | "低" | "无" | "";
+  setUsageProspect: (value: "高" | "低" | "无" | "") => void;
+  authorizationProspect: "高" | "中" | "低" | "无" | "";
+  setAuthorizationProspect: (value: "高" | "中" | "低" | "无" | "") => void;
+  proposalGrade: "A" | "B" | "C" | "不通过" | "";
+  setProposalGrade: (value: "A" | "B" | "C" | "不通过" | "") => void;
+  conclusion: string;
+  setConclusion: (value: string) => void;
+  enforcementability: "高" | "低" | "无" | "";
+  setEnforcementability: (value: "高" | "低" | "无" | "") => void;
+  reportGenerated: boolean;
+  setReportGenerated: (value: boolean) => void;
+  saveWorkflowState: () => void;
+};
 
-  // Step 1: 生成检索关键词
-  const [ipcList, setIPCList] = useState<IPCItem[]>([
+const ReportContext = createContext<ReportWorkflowContextType | null>(null);
+
+interface ReportProviderProps {
+  children: ReactNode;
+  initialStep?: 1 | 2 | 3 | 4 | 5;
+  initialData?: any;
+  chatId?: string;
+}
+
+export const ReportProvider = ({ children, initialStep, initialData, chatId }: ReportProviderProps) => {
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(initialStep || 1);
+  const [proposalName, setProposalName] = useState<string>(initialData?.proposalName || "");
+  const [ipcList, setIPCList] = useState<IPCItem[]>(initialData?.ipcList || [
     { code: "G06F", name: "电数字数据处理" },
     { code: "G06N", name: "基于特定计算模型的计算机系统" },
   ]);
-  const [keywords, setKeywords] = useState<KeywordItem[]>([
+  const [keywords, setKeywords] = useState<KeywordItem[]>(initialData?.keywords || [
     { word: "人工智能" },
     { word: "机器学习" },
     { word: "深度学习" },
   ]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(initialData?.selectedTemplate || "ipc-keywords");
+  const [generatedFormula, setGeneratedFormula] = useState<string>(initialData?.generatedFormula || "");
+  const [selectedPatents, setSelectedPatents] = useState<string[]>(initialData?.selectedPatents || []);
+  const [searchResults, setSearchResults] = useState<PatentItem[]>(initialData?.searchResults || []);
+  const [originalSearchResults, setOriginalSearchResults] = useState<PatentItem[]>(initialData?.originalSearchResults || []);
+  const [standardAdaptation, setStandardAdaptation] = useState<boolean>(initialData?.standardAdaptation || false);
+  const [vehicleApplication, setVehicleApplication] = useState<boolean>(initialData?.vehicleApplication || false);
+  const [usageProspect, setUsageProspect] = useState<"高" | "低" | "无" | "">(initialData?.usageProspect || "");
+  const [authorizationProspect, setAuthorizationProspect] = useState<"高" | "中" | "低" | "无" | "">(initialData?.authorizationProspect || "");
+  const [proposalGrade, setProposalGrade] = useState<"A" | "B" | "C" | "不通过" | "">(initialData?.proposalGrade || "");
+  const [conclusion, setConclusion] = useState<string>(initialData?.conclusion || "");
+  const [enforcementability, setEnforcementability] = useState<"高" | "低" | "无" | "">(initialData?.enforcementability || "");
+  const [reportGenerated, setReportGenerated] = useState<boolean>(initialData?.reportGenerated || false);
+
+  const saveWorkflowState = async () => {
+    if (!chatId) return;
+
+    try {
+      const workflowData = {
+        step,
+        proposalName,
+        ipcList,
+        keywords,
+        selectedTemplate,
+        generatedFormula,
+        selectedPatents,
+        searchResults,
+        originalSearchResults,
+        standardAdaptation,
+        vehicleApplication,
+        usageProspect,
+        authorizationProspect,
+        proposalGrade,
+        conclusion,
+        enforcementability,
+        reportGenerated,
+      };
+
+      const historyData = {
+        operation_content: JSON.stringify(workflowData),
+        operation_result: JSON.stringify(workflowData),
+      };
+
+      await fetch(`/api/history/chat/${chatId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(historyData),
+      });
+
+      window.dispatchEvent(new CustomEvent('history-updated'));
+    } catch (error) {
+      console.error("保存专利检索报告历史记录失败:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (chatId && step >= 1) {
+      saveWorkflowState();
+    }
+  }, [step, proposalName, ipcList, keywords, selectedTemplate, generatedFormula, selectedPatents, searchResults, originalSearchResults, standardAdaptation, vehicleApplication, usageProspect, authorizationProspect, proposalGrade, conclusion, enforcementability, reportGenerated, chatId]);
+
+  const contextValue: ReportWorkflowContextType = {
+    step,
+    setStep,
+    proposalName,
+    setProposalName,
+    ipcList,
+    setIPCList,
+    keywords,
+    setKeywords,
+    selectedTemplate,
+    setSelectedTemplate,
+    generatedFormula,
+    setGeneratedFormula,
+    selectedPatents,
+    setSelectedPatents,
+    searchResults,
+    setSearchResults,
+    originalSearchResults,
+    setOriginalSearchResults,
+    standardAdaptation,
+    setStandardAdaptation,
+    vehicleApplication,
+    setVehicleApplication,
+    usageProspect,
+    setUsageProspect,
+    authorizationProspect,
+    setAuthorizationProspect,
+    proposalGrade,
+    setProposalGrade,
+    conclusion,
+    setConclusion,
+    enforcementability,
+    setEnforcementability,
+    reportGenerated,
+    setReportGenerated,
+    saveWorkflowState,
+  };
+
+  return (
+    <ReportContext.Provider value={contextValue}>
+      {children}
+    </ReportContext.Provider>
+  );
+};
+
+export const useReportContext = () => {
+  const context = useContext(ReportContext);
+  if (!context) {
+    throw new Error("useReportContext must be used within a ReportProvider");
+  }
+  return context;
+};
+
+export function ReportWorkflow({ fileName, onBack, chatId }: ReportWorkflowProps) {
+  const {
+    step,
+    setStep,
+    proposalName,
+    setProposalName,
+    ipcList,
+    setIPCList,
+    keywords,
+    setKeywords,
+    selectedTemplate,
+    setSelectedTemplate,
+    generatedFormula,
+    setGeneratedFormula,
+    selectedPatents,
+    setSelectedPatents,
+    searchResults,
+    setSearchResults,
+    originalSearchResults,
+    setOriginalSearchResults,
+    standardAdaptation,
+    setStandardAdaptation,
+    vehicleApplication,
+    setVehicleApplication,
+    usageProspect,
+    setUsageProspect,
+    authorizationProspect,
+    setAuthorizationProspect,
+    proposalGrade,
+    setProposalGrade,
+    conclusion,
+    setConclusion,
+    enforcementability,
+    setEnforcementability,
+    reportGenerated,
+    setReportGenerated,
+  } = useReportContext();
+
+  // Initialize proposal name if empty
+  useEffect(() => {
+    if (!proposalName) {
+      const date = new Date();
+      const dateStr = date
+        .toLocaleDateString("zh-CN", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        })
+        .replace(/\//g, "-");
+      setProposalName(`专利检索报告-${fileName.replace(/\.[^/.]+$/, "")}-${dateStr}`);
+    }
+  }, [proposalName, fileName, setProposalName]);
+
+  // Manual input states
   const [newIPCCode, setNewIPCCode] = useState("");
   const [filteredIPCSuggestions, setFilteredIPCSuggestions] = useState<
     IPCItem[]
@@ -197,42 +404,9 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
   const [newKeyword, setNewKeyword] = useState("");
   const [suggestedWords, setSuggestedWords] = useState<string[]>([]);
   const [activeKeyword, setActiveKeyword] = useState<string | null>(null);
-
-  // Step 2: 生成检索式（默认选择第一个模板）
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(
-    "ipc-keywords",
-  );
-  const [generatedFormula, setGeneratedFormula] = useState<string>("");
-
-  // Step 3: 检索相关文件
-  const [selectedPatents, setSelectedPatents] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<PatentItem[]>([]);
-  const [originalSearchResults, setOriginalSearchResults] = useState<
-    PatentItem[]
-  >([]);
   const [editingPatentId, setEditingPatentId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<Partial<PatentItem>>({});
-
-  // Step 4: 完善报告信息
-  const [standardAdaptation, setStandardAdaptation] = useState(false);
-  const [vehicleApplication, setVehicleApplication] = useState(false);
-  const [usageProspect, setUsageProspect] = useState<"高" | "低" | "无" | "">(
-    "",
-  );
-  const [authorizationProspect, setAuthorizationProspect] = useState<
-    "高" | "中" | "低" | "无" | ""
-  >("");
-  const [proposalGrade, setProposalGrade] = useState<
-    "A" | "B" | "C" | "不通过" | ""
-  >("");
-  const [conclusion, setConclusion] = useState("");
-  const [enforcementability, setEnforcementability] = useState<
-    "高" | "低" | "无" | ""
-  >("");
-
-  // Step 5: 预览与导出
-  const [reportGenerated, setReportGenerated] = useState(false);
 
   // Auto-generate formula when entering step 2
   useEffect(() => {

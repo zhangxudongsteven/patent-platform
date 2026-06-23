@@ -70,6 +70,7 @@ export async function streamQAAnswer(
   question: string,
   chatHistory: Array<{ role: "user" | "assistant"; content: string }>,
   context?: string,
+  signal?: AbortSignal,
 ) {
   const model = new ChatOpenAI({
     modelName: process.env.OPENAI_CHAT_MODEL,
@@ -107,6 +108,9 @@ export async function streamQAAnswer(
   // Convert to a plain AsyncGenerator to ensure it can be serialized by Next.js Server Actions
   async function* generator() {
     for await (const chunk of stream) {
+      if (signal?.aborted) {
+        break;
+      }
       yield chunk;
     }
   }

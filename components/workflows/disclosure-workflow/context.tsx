@@ -9,8 +9,15 @@ const DisclosureContext = createContext<DisclosureWorkflowContextType | null>(
   null,
 );
 
-export const DisclosureProvider = ({ children }: { children: ReactNode }) => {
-  const workflow = useDisclosureWorkflow();
+interface DisclosureProviderProps {
+  children: ReactNode;
+  initialStep?: 1 | 2 | 3 | 4 | 5;
+  initialData?: any;
+  chatId?: string;
+}
+
+export const DisclosureProvider = ({ children, initialStep, initialData, chatId }: DisclosureProviderProps) => {
+  const workflow = useDisclosureWorkflow(initialStep, initialData, chatId);
   return (
     <DisclosureContext.Provider value={workflow}>
       {children}

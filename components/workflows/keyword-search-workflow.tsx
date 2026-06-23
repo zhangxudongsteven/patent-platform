@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Search } from "lucide-react";
@@ -10,7 +10,96 @@ import { PatentItem } from "@/lib/types";
 interface KeywordSearchWorkflowProps {
   onBack: () => void;
   initialQuery?: string;
+  chatId?: string;
 }
+
+type KeywordSearchContextType = {
+  query: string;
+  setQuery: (query: string) => void;
+  isSearching: boolean;
+  setIsSearching: (searching: boolean) => void;
+  results: PatentItem[];
+  setResults: (results: PatentItem[]) => void;
+  hasSearched: boolean;
+  setHasSearched: (searched: boolean) => void;
+  saveWorkflowState: () => void;
+};
+
+const KeywordSearchContext = createContext<KeywordSearchContextType | null>(null);
+
+interface KeywordSearchProviderProps {
+  children: ReactNode;
+  initialQuery?: string;
+  initialData?: any;
+  chatId?: string;
+}
+
+export const KeywordSearchProvider = ({ children, initialQuery, initialData, chatId }: KeywordSearchProviderProps) => {
+  const [query, setQuery] = useState<string>(initialData?.query || initialQuery || "");
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [results, setResults] = useState<PatentItem[]>(initialData?.results || []);
+  const [hasSearched, setHasSearched] = useState<boolean>(initialData?.hasSearched ?? !!initialQuery);
+
+  const saveWorkflowState = async () => {
+    if (!chatId) return;
+
+    try {
+      const workflowData = {
+        query,
+        isSearching,
+        results,
+        hasSearched,
+      };
+
+      const historyData = {
+        operation_content: JSON.stringify(workflowData),
+        operation_result: JSON.stringify(workflowData),
+      };
+
+      await fetch(`/api/history/chat/${chatId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(historyData),
+      });
+
+      window.dispatchEvent(new CustomEvent('history-updated'));
+    } catch (error) {
+      console.error("保存专利检索历史记录失败:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (chatId) {
+      saveWorkflowState();
+    }
+  }, [query, results, hasSearched, chatId]);
+
+  const contextValue: KeywordSearchContextType = {
+    query,
+    setQuery,
+    isSearching,
+    setIsSearching,
+    results,
+    setResults,
+    hasSearched,
+    setHasSearched,
+    saveWorkflowState,
+  };
+
+  return (
+    <KeywordSearchContext.Provider value={contextValue}>
+      {children}
+    </KeywordSearchContext.Provider>
+  );
+};
+
+export const useKeywordSearchContext = () => {
+  const context = useContext(KeywordSearchContext);
+  if (!context) {
+    throw new Error("useKeywordSearchContext must be used within a KeywordSearchProvider");
+  }
+  return context;
+};
 
 // 模拟专利数据
 const mockPatents: PatentItem[] = [
@@ -46,13 +135,19 @@ const mockPatents: PatentItem[] = [
 export function KeywordSearchWorkflow({
   onBack,
   initialQuery = "",
+  chatId,
 }: KeywordSearchWorkflowProps) {
-  const [query, setQuery] = useState(initialQuery);
-  const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<PatentItem[]>(
-    initialQuery ? mockPatents : [],
-  );
-  const [hasSearched, setHasSearched] = useState(!!initialQuery);
+  const {
+    query,
+    setQuery,
+    isSearching,
+    setIsSearching,
+    results,
+    setResults,
+    hasSearched,
+    setHasSearched,
+    saveWorkflowState,
+  } = useKeywordSearchContext();
 
   const handleSearch = () => {
     if (!query.trim()) return;

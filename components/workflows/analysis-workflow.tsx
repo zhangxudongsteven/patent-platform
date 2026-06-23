@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -22,7 +22,96 @@ import {
 interface AnalysisWorkflowProps {
   fileNames: string[];
   onBack: () => void;
+  chatId?: string;
 }
+
+type AnalysisWorkflowContextType = {
+  fileNames: string[];
+  setFileNames: (names: string[]) => void;
+  isAnalyzing: boolean;
+  setIsAnalyzing: (analyzing: boolean) => void;
+  progress: number;
+  setProgress: (progress: number) => void;
+  selectedFileIndex: number;
+  setSelectedFileIndex: (index: number) => void;
+  saveWorkflowState: () => void;
+};
+
+const AnalysisContext = createContext<AnalysisWorkflowContextType | null>(null);
+
+interface AnalysisProviderProps {
+  children: ReactNode;
+  initialFileNames?: string[];
+  initialData?: any;
+  chatId?: string;
+}
+
+export const AnalysisProvider = ({ children, initialFileNames, initialData, chatId }: AnalysisProviderProps) => {
+  const [fileNames, setFileNames] = useState<string[]>(initialData?.fileNames || initialFileNames || []);
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(initialData?.isAnalyzing ?? false);
+  const [progress, setProgress] = useState<number>(initialData?.progress ?? 0);
+  const [selectedFileIndex, setSelectedFileIndex] = useState<number>(initialData?.selectedFileIndex ?? 0);
+
+  const saveWorkflowState = async () => {
+    if (!chatId) return;
+
+    try {
+      const workflowData = {
+        fileNames,
+        isAnalyzing,
+        progress,
+        selectedFileIndex,
+      };
+
+      const historyData = {
+        operation_content: JSON.stringify(workflowData),
+        operation_result: JSON.stringify(workflowData),
+      };
+
+      await fetch(`/api/history/chat/${chatId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(historyData),
+      });
+
+      window.dispatchEvent(new CustomEvent('history-updated'));
+    } catch (error) {
+      console.error("保存专利解析历史记录失败:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (chatId) {
+     // saveWorkflowState();
+    }
+  }, [fileNames, isAnalyzing, progress, selectedFileIndex, chatId]);
+
+  const contextValue: AnalysisWorkflowContextType = {
+    fileNames,
+    setFileNames,
+    isAnalyzing,
+    setIsAnalyzing,
+    progress,
+    setProgress,
+    selectedFileIndex,
+    setSelectedFileIndex,
+    saveWorkflowState,
+  };
+
+  return (
+    <AnalysisContext.Provider value={contextValue}>
+      {children}
+    </AnalysisContext.Provider>
+  );
+};
+
+export const useAnalysisContext = () => {
+  const context = useContext(AnalysisContext);
+  if (!context) {
+    throw new Error("useAnalysisContext must be used within an AnalysisProvider");
+  }
+  return context;
+};
 
 interface AnalysisSection {
   title: string;
@@ -31,10 +120,17 @@ interface AnalysisSection {
   items?: string[];
 }
 
-export function AnalysisWorkflow({ fileNames, onBack }: AnalysisWorkflowProps) {
-  const [isAnalyzing, setIsAnalyzing] = useState(true);
-  const [progress, setProgress] = useState(0);
-  const [selectedFileIndex, setSelectedFileIndex] = useState(0);
+export function AnalysisWorkflow({ fileNames, onBack, chatId }: AnalysisWorkflowProps) {
+  const {
+    fileNames: contextFileNames,
+    setFileNames,
+    isAnalyzing,
+    setIsAnalyzing,
+    progress,
+    setProgress,
+    selectedFileIndex,
+    setSelectedFileIndex,
+  } = useAnalysisContext();
 
   // 模拟解析过程
   useEffect(() => {
@@ -51,9 +147,9 @@ export function AnalysisWorkflow({ fileNames, onBack }: AnalysisWorkflowProps) {
       }, 50);
       return () => clearInterval(interval);
     }
-  }, [isAnalyzing]);
+  }, [isAnalyzing, setProgress, setIsAnalyzing]);
 
-  const currentFileName = fileNames[selectedFileIndex] || "该文件";
+  const currentFileName = contextFileNames[selectedFileIndex] || "该文件";
 
   const analysisSections: AnalysisSection[] = [
     {
@@ -88,7 +184,7 @@ export function AnalysisWorkflow({ fileNames, onBack }: AnalysisWorkflowProps) {
   ];
 
   return (
-    <div className="flex h-screen flex-col bg-background">
+    <div className="flex h-full flex-col bg-background">
       {/* Header */}
       <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4">
         <div className="flex items-center gap-4">
@@ -107,9 +203,9 @@ export function AnalysisWorkflow({ fileNames, onBack }: AnalysisWorkflowProps) {
                 专利深度解析
               </h2>
               <p className="text-xs text-muted-foreground">
-                {fileNames.length > 1
-                  ? `共 ${fileNames.length} 个文件`
-                  : fileNames[0]}
+                {contextFileNames.length > 1
+                  ? `共 ${contextFileNames.length} 个文件`
+                  : contextFileNames[0]}
               </p>
             </div>
           </div>
@@ -123,9 +219,9 @@ export function AnalysisWorkflow({ fileNames, onBack }: AnalysisWorkflowProps) {
           {/* File Tabs - Fixed */}
           <div className="border-b border-border bg-background px-6 pt-6">
             <div className="mx-auto max-w-4xl">
-              {fileNames.length > 0 && (
+              {contextFileNames.length > 0 && (
                 <div className="flex w-full overflow-x-auto">
-                  {fileNames.map((name, index) => (
+                  {contextFileNames.map((name, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedFileIndex(index)}
@@ -163,7 +259,7 @@ export function AnalysisWorkflow({ fileNames, onBack }: AnalysisWorkflowProps) {
                       正在深度解析专利文档...
                     </h3>
                     <p className="text-muted-foreground">
-                      正在分析：{fileNames[selectedFileIndex]}
+                      正在分析：{contextFileNames[selectedFileIndex]}
                     </p>
                   </div>
                 </div>
@@ -211,7 +307,7 @@ export function AnalysisWorkflow({ fileNames, onBack }: AnalysisWorkflowProps) {
                   </div>
 
                   {/* Patent Analysis Summary - Only show if multiple files */}
-                  {!isAnalyzing && fileNames.length > 1 && (
+                  {!isAnalyzing && contextFileNames.length > 1 && (
                     <div className="rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
                       <div className="mb-4 flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent">
@@ -224,7 +320,7 @@ export function AnalysisWorkflow({ fileNames, onBack }: AnalysisWorkflowProps) {
 
                       <div className="pl-[52px]">
                         <p className="mb-4 text-sm text-foreground/80 leading-relaxed">
-                          综合分析上述{fileNames.length}
+                          综合分析上述{contextFileNames.length}
                           份专利文档，可以看出该技术领域主要集中在解决复杂环境下的图像识别精度与效率问题。各专利方案在技术手段上各有侧重，但均采用了深度学习与传统图像处理相结合的思路。
                         </p>
                         <ul className="space-y-2">

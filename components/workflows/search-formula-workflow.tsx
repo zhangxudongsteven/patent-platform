@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -23,6 +23,7 @@ import { PatentItem } from "@/lib/types";
 interface SearchFormulaWorkflowProps {
   fileName: string;
   onBack: () => void;
+  chatId?: string;
 }
 
 interface IPCItem {
@@ -42,6 +43,120 @@ interface TemplateOption {
   description: string;
   example: string;
 }
+
+type SearchFormulaWorkflowContextType = {
+  step: 1 | 2 | 3;
+  setStep: (step: 1 | 2 | 3) => void;
+  ipcList: any[];
+  setIPCList: (list: any[]) => void;
+  keywords: any[];
+  setKeywords: (list: any[]) => void;
+  generatedFormula: string;
+  setGeneratedFormula: (formula: string) => void;
+  searchResults: PatentItem[];
+  setSearchResults: (results: PatentItem[]) => void;
+  originalSearchResults: PatentItem[];
+  setOriginalSearchResults: (results: PatentItem[]) => void;
+  saveWorkflowState: () => void;
+};
+
+const SearchFormulaContext = createContext<SearchFormulaWorkflowContextType | null>(
+  null,
+);
+
+interface SearchFormulaProviderProps {
+  children: ReactNode;
+  initialStep?: 1 | 2 | 3;
+  initialData?: any;
+  chatId?: string;
+}
+
+export const SearchFormulaProvider = ({ children, initialStep, initialData, chatId }: SearchFormulaProviderProps) => {
+  const [step, setStep] = useState<1 | 2 | 3>(initialStep || 1);
+  const [ipcList, setIPCList] = useState<any[]>(initialData?.ipcList || [
+    { code: "G06F", name: "电数字数据处理", selected: true },
+    { code: "G06N", name: "基于特定计算模型的计算机系统", selected: true },
+    { code: "G06Q", name: "专门适用于行政、商业、金融、管理、监督或预测目的的数据处理系统或方法", selected: true },
+  ]);
+  const [keywords, setKeywords] = useState<any[]>(initialData?.keywords || [
+    { word: "人工智能", selected: true },
+    { word: "机器学习", selected: true },
+    { word: "深度学习", selected: true },
+    { word: "神经网络", selected: true },
+    { word: "算法", selected: true },
+  ]);
+  const [generatedFormula, setGeneratedFormula] = useState<string>(initialData?.generatedFormula || "");
+  const [searchResults, setSearchResults] = useState<PatentItem[]>(initialData?.searchResults || []);
+  const [originalSearchResults, setOriginalSearchResults] = useState<PatentItem[]>(initialData?.originalSearchResults || []);
+
+  const saveWorkflowState = async () => {
+    if (!chatId) return;
+
+    try {
+      const workflowData = {
+        step,
+        ipcList,
+        keywords,
+        generatedFormula,
+        searchResults,
+        originalSearchResults,
+      };
+
+      const historyData = {
+        operation_content: JSON.stringify(workflowData),
+        operation_result: JSON.stringify(workflowData),
+      };
+
+      await fetch(`/api/history/chat/${chatId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(historyData),
+      });
+
+      window.dispatchEvent(new CustomEvent('history-updated'));
+    } catch (error) {
+      console.error("保存专利检索式历史记录失败:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (chatId && step >= 1) {
+      saveWorkflowState();
+    }
+  }, [step, ipcList, keywords, generatedFormula, searchResults, originalSearchResults, chatId]);
+
+  const contextValue: SearchFormulaWorkflowContextType = {
+    step,
+    setStep,
+    ipcList,
+    setIPCList,
+    keywords,
+    setKeywords,
+    generatedFormula,
+    setGeneratedFormula,
+    searchResults,
+    setSearchResults,
+    originalSearchResults,
+    setOriginalSearchResults,
+    saveWorkflowState,
+  };
+
+  return (
+    <SearchFormulaContext.Provider value={contextValue}>
+      {children}
+    </SearchFormulaContext.Provider>
+  );
+};
+
+export const useSearchFormulaContext = () => {
+  const context = useContext(SearchFormulaContext);
+  if (!context) {
+    throw new Error(
+      "useSearchFormulaContext must be used within a SearchFormulaProvider",
+    );
+  }
+  return context;
+};
 
 // 模拟数据
 const mockIPCList: IPCItem[] = [
@@ -156,19 +271,14 @@ const templates: TemplateOption[] = [
 export function SearchFormulaWorkflow({
   fileName,
   onBack,
+  chatId,
 }: SearchFormulaWorkflowProps) {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [ipcList, setIPCList] = useState<IPCItem[]>(mockIPCList);
-  const [keywords, setKeywords] = useState<KeywordItem[]>(mockKeywords);
+  const { step, setStep, ipcList, setIPCList, keywords, setKeywords, generatedFormula, setGeneratedFormula, searchResults, setSearchResults, originalSearchResults, setOriginalSearchResults } = useSearchFormulaContext();
+  
   const [extendedWords, setExtendedWords] =
     useState<KeywordItem[]>(mockExtendedWords);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [generatedFormula, setGeneratedFormula] = useState<string>("");
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<PatentItem[]>([]);
-  const [originalSearchResults, setOriginalSearchResults] = useState<
-    PatentItem[]
-  >([]);
 
   // Manual input states
   const [showIPCInput, setShowIPCInput] = useState(false);
@@ -210,7 +320,7 @@ export function SearchFormulaWorkflow({
     if (word.trim() && !keywords.find((kw) => kw.word === word.trim())) {
       setKeywords([...keywords, { word: word.trim() }]);
 
-      // Show suggestions for the newly added keyword
+      // Show suggestions for newly added keyword
       const suggestions = keywordSuggestions[word.trim()] || [];
       setSuggestedWords(suggestions);
 
@@ -246,7 +356,7 @@ export function SearchFormulaWorkflow({
       setSuggestedWords([]);
     } else {
       setActiveKeyword(keyword);
-      // Show suggestions for the clicked keyword (max 5)
+      // Show suggestions for clicked keyword (max 5)
       const suggestions = (keywordSuggestions[keyword] || [])
         .slice(0, 5)
         .filter((word) => !keywords.find((kw) => kw.word === word));
