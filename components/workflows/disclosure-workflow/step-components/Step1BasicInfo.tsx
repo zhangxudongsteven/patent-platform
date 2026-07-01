@@ -2,8 +2,16 @@
 
 import React from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field";
 import { useDisclosureContext } from "../context";
 
 export function Step1BasicInfo() {
@@ -19,41 +27,37 @@ export function Step1BasicInfo() {
   } = useDisclosureContext();
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div className="rounded-lg border border-border bg-card p-6">
         <h2 className="mb-6 text-xl font-semibold text-foreground">
           填写基本信息
         </h2>
 
-        <div className="space-y-6">
-          <div>
-            <Label className="mb-2 block text-sm font-medium text-foreground">
-              发明名称 *
-            </Label>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="invention-name">发明名称 *</FieldLabel>
             <Input
+              id="invention-name"
               type="text"
               value={inventionName}
               onChange={(e) => setInventionName(e.target.value)}
               placeholder="请输入发明创造的名称"
             />
-          </div>
+          </Field>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="mb-2 block text-sm font-medium text-foreground">
-                联系人 *
-              </Label>
+            <Field>
+              <FieldLabel htmlFor="contact-person">联系人 *</FieldLabel>
               <Input
+                id="contact-person"
                 type="text"
                 value={contactPerson}
                 onChange={(e) => setContactPerson(e.target.value)}
                 placeholder="请输入联系人姓名"
               />
-            </div>
-            <div>
-              <Label className="mb-2 block text-sm font-medium text-foreground">
-                申请类型 *
-              </Label>
+            </Field>
+            <FieldSet>
+              <FieldLegend variant="label">申请类型 *</FieldLegend>
               <RadioGroup
                 value={applicationType}
                 onValueChange={(value) =>
@@ -61,34 +65,34 @@ export function Step1BasicInfo() {
                 }
                 className="flex h-[42px] items-center gap-4"
               >
-                <div className="flex items-center space-x-2">
+                <Field orientation="horizontal" className="w-auto gap-2">
                   <RadioGroupItem value="发明" id="type-invention" />
-                  <Label htmlFor="type-invention">发明</Label>
-                </div>
-                <div className="flex items-center space-x-2">
+                  <FieldLabel htmlFor="type-invention">发明</FieldLabel>
+                </Field>
+                <Field orientation="horizontal" className="w-auto gap-2">
                   <RadioGroupItem value="实用新型" id="type-utility" />
-                  <Label htmlFor="type-utility">实用新型</Label>
-                </div>
+                  <FieldLabel htmlFor="type-utility">实用新型</FieldLabel>
+                </Field>
               </RadioGroup>
-            </div>
+            </FieldSet>
           </div>
 
-          <div>
-            <Label className="mb-2 block text-sm font-medium text-foreground">
-              技术领域 *
-            </Label>
-            <div className="flex items-center gap-2 text-foreground">
-              <span className="text-sm">本发明创造技术方案所属技术领域为</span>
-              <input
+          <Field>
+            <FieldLabel htmlFor="technical-field">技术领域 *</FieldLabel>
+            <FieldContent>
+              <FieldDescription>
+                本发明创造技术方案所属技术领域
+              </FieldDescription>
+              <Input
+                id="technical-field"
                 type="text"
                 value={technicalField}
                 onChange={(e) => setTechnicalField(e.target.value)}
                 placeholder="请填写技术领域"
-                className="flex-1 border-b-2 border-dashed border-primary bg-transparent px-2 py-1 text-sm outline-none focus:border-solid placeholder:text-muted-foreground"
               />
-            </div>
-          </div>
-        </div>
+            </FieldContent>
+          </Field>
+        </FieldGroup>
       </div>
     </div>
   );

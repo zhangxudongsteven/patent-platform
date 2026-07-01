@@ -2,6 +2,8 @@
 
 import React from "react";
 import { useDisclosureContext } from "../context";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 export function Step5Preview() {
   const {
@@ -17,7 +19,7 @@ export function Step5Preview() {
   } = useDisclosureContext();
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div className="rounded-lg border border-border bg-card p-6">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-foreground">
@@ -25,10 +27,10 @@ export function Step5Preview() {
           </h2>
         </div>
 
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           <div className="rounded-lg border border-border bg-background p-4">
             <h3 className="mb-3 font-semibold text-foreground">一、基本信息</h3>
-            <div className="space-y-2 text-sm">
+            <div className="flex flex-col gap-2 text-sm">
               <p>
                 <span className="text-muted-foreground">发明名称：</span>
                 {inventionName}
@@ -61,7 +63,7 @@ export function Step5Preview() {
             <h3 className="mb-3 font-semibold text-foreground">
               三、本发明的技术方案
             </h3>
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
               {contentBlocks.map((block, index) => (
                 <div key={block.id}>
                   {block.type === "text" ? (
@@ -69,7 +71,7 @@ export function Step5Preview() {
                       {block.content}
                     </div>
                   ) : block.imageUrl ? (
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
                       <img
                         src={block.imageUrl || "/placeholder.svg"}
                         alt={block.content}
@@ -81,28 +83,31 @@ export function Step5Preview() {
 
                       {/* 预览中的检测结果 */}
                       {block.detectionResult && (
-                        <div
-                          className={
+                        <Alert
+                          variant={
                             block.detectionResult.pass
-                              ? "rounded-lg border border-green-200 bg-green-50 p-3"
-                              : "rounded-lg border border-red-200 bg-red-50 p-3"
+                              ? "default"
+                              : "destructive"
                           }
                         >
-                          <div className="flex items-center gap-2 mb-1">
-                            <span
-                              className={`h-2 w-2 rounded-full ${block.detectionResult.pass ? "bg-green-500" : "bg-red-500"}`}
-                            ></span>
-                            <span className="text-sm font-medium">
+                          <AlertTitle>
+                            <Badge
+                              variant={
+                                block.detectionResult.pass
+                                  ? "secondary"
+                                  : "destructive"
+                              }
+                            >
                               图片检测：
                               {block.detectionResult.pass
-                                ? "✓ 符合要求"
-                                : "✗ 不符合要求"}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
+                                ? "符合要求"
+                                : "不符合要求"}
+                            </Badge>
+                          </AlertTitle>
+                          <AlertDescription className="text-xs">
                             {block.detectionResult.reason}
-                          </p>
-                        </div>
+                          </AlertDescription>
+                        </Alert>
                       )}
                     </div>
                   ) : null}

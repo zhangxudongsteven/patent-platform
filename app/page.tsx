@@ -12,7 +12,9 @@ import { KeywordSearchWorkflow } from "@/components/workflows/keyword-search-wor
 import { Button } from "@/components/ui/button";
 import { streamQAAnswer } from "@/lib/service/chat";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Bot } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Spinner } from "@/components/ui/spinner";
 
 // 工具名称映射
 const toolNames: Record<string, string> = {
@@ -315,18 +317,21 @@ export default function Home() {
                 ))}
                 {isLoading &&
                   messages[messages.length - 1]?.role === "user" && (
-                    <div className="flex w-full gap-4 px-4 py-6 bg-muted/30">
-                      <div className="flex w-full max-w-3xl mx-auto gap-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        </div>
-                        <div className="flex-1 space-y-2">
+                    <div className="flex w-full gap-4 bg-muted/30 px-4 py-6">
+                      <div className="mx-auto flex w-full max-w-3xl gap-4">
+                        <Avatar className="size-8 rounded-lg bg-primary text-primary-foreground">
+                          <AvatarFallback className="rounded-lg bg-transparent">
+                            <Bot />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-1 flex-col gap-2">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-foreground">
                               专利智能助手
                             </span>
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Spinner />
                             正在思考...
                           </div>
                         </div>

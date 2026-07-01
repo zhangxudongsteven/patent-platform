@@ -2,9 +2,16 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Sparkles, RefreshCw } from "lucide-react";
+import { Sparkles, Lightbulb } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Spinner } from "@/components/ui/spinner";
 import { useDisclosureContext } from "../context";
 
 export function Step2TechBackground() {
@@ -38,31 +45,38 @@ export function Step2TechBackground() {
   // 然后把 AI 返回的 `techBackground` 填回这个框（覆盖或追加）。
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* 步骤1：输入现有技术问题 */}
       <div className="rounded-lg border border-border bg-card p-6">
         <h2 className="text-xl font-semibold text-foreground mb-4">
           1. 描述现有技术问题
         </h2>
 
-        <div className="bg-muted/50 p-4 rounded-md mb-4 text-sm text-muted-foreground">
-          <p className="font-medium mb-2 flex items-center gap-2">
-            <span className="text-primary">💡</span> 填写指引
-          </p>
-          <ul className="list-disc list-inside space-y-1 ml-1">
-            <li>请详细描述当前技术方案中存在的具体问题、缺陷或不足。</li>
-            <li>例如：效率低下、成本过高、操作复杂、精度不足等。</li>
-            <li>AI 将根据您描述的问题，自动撰写专业的技术背景部分。</li>
-          </ul>
-        </div>
+        <Alert className="mb-4">
+          <Lightbulb />
+          <AlertTitle>填写指引</AlertTitle>
+          <AlertDescription>
+            <ul className="flex list-disc flex-col gap-1 pl-4">
+              <li>请详细描述当前技术方案中存在的具体问题、缺陷或不足。</li>
+              <li>例如：效率低下、成本过高、操作复杂、精度不足等。</li>
+              <li>AI 将根据您描述的问题，自动撰写专业的技术背景部分。</li>
+            </ul>
+          </AlertDescription>
+        </Alert>
 
-        <Textarea
-          value={existingProblems}
-          onChange={(e) => setExistingProblems(e.target.value)}
-          placeholder="请输入现有技术存在的问题..."
-          rows={6}
-          className="resize-none mb-4"
-        />
+        <FieldGroup className="gap-4">
+          <Field>
+            <FieldLabel htmlFor="existing-problems">现有技术问题</FieldLabel>
+            <Textarea
+              id="existing-problems"
+              value={existingProblems}
+              onChange={(e) => setExistingProblems(e.target.value)}
+              placeholder="请输入现有技术存在的问题..."
+              rows={6}
+              className="resize-none"
+            />
+          </Field>
+        </FieldGroup>
 
         <div className="flex justify-end">
           <Button
@@ -71,9 +85,9 @@ export function Step2TechBackground() {
             className="gap-2"
           >
             {isGeneratingBackground ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
+              <Spinner data-icon="inline-start" />
             ) : (
-              <Sparkles className="h-4 w-4" />
+              <Sparkles data-icon="inline-start" />
             )}
             {isGeneratingBackground ? "生成中..." : "AI 生成技术背景"}
           </Button>
@@ -88,13 +102,13 @@ export function Step2TechBackground() {
           </h2>
         </div>
 
-        <p className="mb-4 text-sm text-muted-foreground">
-          基于发明名称"{inventionName}"、技术领域"{technicalField}
-          "以及您描述的现有问题，AI为您生成的专业技术背景。您可以直接在下方编辑。
-        </p>
-
-        <div className="relative">
+        <Field className="relative">
+          <FieldDescription>
+            基于发明名称"{inventionName}"、技术领域"{technicalField}
+            "以及您描述的现有问题，AI为您生成的专业技术背景。您可以直接在下方编辑。
+          </FieldDescription>
           <Textarea
+            id="tech-background"
             value={techBackground}
             onChange={(e) => setTechBackground(e.target.value)}
             placeholder="AI 生成的内容将显示在这里..."
@@ -104,11 +118,11 @@ export function Step2TechBackground() {
           />
           {isGeneratingBackground && (
             <div className="absolute bottom-4 right-4 flex items-center gap-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded-md border shadow-sm">
-              <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+              <Spinner className="size-3" />
               AI正在生成...
             </div>
           )}
-        </div>
+        </Field>
       </div>
     </div>
   );

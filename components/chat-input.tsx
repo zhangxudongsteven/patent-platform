@@ -6,8 +6,6 @@ import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import {
   Send,
-  Paperclip,
-  Globe,
   FileSearch,
   FileText,
   FileBarChart,
@@ -15,52 +13,49 @@ import {
   Upload,
   X,
   Search,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface Tool {
   id: string;
   name: string;
-  icon: React.ReactNode;
+  icon: LucideIcon;
   description: string;
-  color: string;
 }
 
 const tools: Tool[] = [
   {
     id: "patent-search",
     name: "专利检索",
-    icon: <Search className="h-5 w-5" />,
+    icon: Search,
     description: "全库专利检索",
-    color: "bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20",
   },
   {
     id: "disclosure",
     name: "专利交底书",
-    icon: <FileText className="h-5 w-5" />,
+    icon: FileText,
     description: "撰写技术交底书",
-    color: "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20",
   },
   {
     id: "search-formula",
     name: "专利检索式",
-    icon: <FileSearch className="h-5 w-5" />,
+    icon: FileSearch,
     description: "生成专业检索式",
-    color: "bg-blue-500/10 text-blue-600 hover:bg-blue-500/20",
   },
   {
     id: "report",
     name: "专利检索报告",
-    icon: <FileBarChart className="h-5 w-5" />,
+    icon: FileBarChart,
     description: "生成检索报告",
-    color: "bg-amber-500/10 text-amber-600 hover:bg-amber-500/20",
   },
   {
     id: "analysis",
     name: "专利解析",
-    icon: <FileScan className="h-5 w-5" />,
+    icon: FileScan,
     description: "深度解析专利",
-    color: "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20",
   },
 ];
 
@@ -173,6 +168,24 @@ export function ChatInput({ onSend }: ChatInputProps) {
     setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleToolChange = (value: string) => {
+    if (!value) {
+      setSelectedTool(null);
+      setUploadedFiles([]);
+      return;
+    }
+
+    if (value === "disclosure") {
+      onSend?.("开始专利交底书流程", "disclosure");
+      setSelectedTool(null);
+      setUploadedFiles([]);
+      return;
+    }
+
+    setSelectedTool(value);
+    setUploadedFiles([]);
+  };
+
   const getUploadText = () => {
     if (selectedTool === "analysis")
       return "点击或拖拽上传专利文件（支持多选）";
@@ -231,7 +244,7 @@ export function ChatInput({ onSend }: ChatInputProps) {
                     className="flex items-center justify-between rounded-lg border border-border bg-accent/50 px-4 py-3"
                   >
                     <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-primary" />
+                      <FileText className="size-5 text-primary" />
                       <div className="flex flex-col">
                         <span className="text-sm font-medium text-foreground">
                           {file.name}
@@ -245,31 +258,35 @@ export function ChatInput({ onSend }: ChatInputProps) {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleRemoveFile(index)}
-                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      className="size-8 text-muted-foreground hover:text-foreground"
                     >
-                      <X className="h-4 w-4" />
+                      <X data-icon="icon" />
                     </Button>
                   </div>
                 ))}
                 {selectedTool === "analysis" && (
-                  <button
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={handleUploadClick}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-accent/30 py-2 text-sm text-muted-foreground transition-colors hover:border-primary hover:bg-accent/50 hover:text-foreground"
+                    className="h-auto w-full border-dashed py-2 text-muted-foreground"
                   >
-                    <Upload className="h-4 w-4" />
+                    <Upload data-icon="inline-start" />
                     继续上传（或拖拽文件）
-                  </button>
+                  </Button>
                 )}
               </div>
             ) : (
-              <button
+              <Button
+                type="button"
+                variant="outline"
                 onClick={handleUploadClick}
                 className={cn(
-                  "flex w-full items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border bg-accent/30 px-4 py-8 transition-colors hover:border-primary hover:bg-accent/50",
+                  "h-auto w-full justify-center gap-3 border-dashed px-4 py-8 text-left",
                   isDragging && "border-primary bg-primary/10",
                 )}
               >
-                <Upload className="h-6 w-6 text-muted-foreground" />
+                <Upload className="size-6 text-muted-foreground" />
                 <div className="flex flex-col items-start">
                   <span className="text-sm font-medium text-foreground">
                     {getUploadText()}
@@ -278,17 +295,17 @@ export function ChatInput({ onSend }: ChatInputProps) {
                     {getFormatText()}
                   </span>
                 </div>
-              </button>
+              </Button>
             )}
           </div>
         ) : (
           <div className="p-4">
-            <textarea
+            <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={getPlaceholderText()}
-              className="w-full resize-none bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[60px] max-h-[200px]"
+              className="max-h-[200px] min-h-[60px] resize-none border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0"
               rows={2}
             />
           </div>
@@ -297,30 +314,29 @@ export function ChatInput({ onSend }: ChatInputProps) {
         {/* Toolbar */}
         <div className="flex items-center justify-between border-t border-border px-4 py-3">
           {/* Left Side - Tool Options */}
-          <div className="flex items-center gap-2">
-            {tools.map((tool) => (
-              <button
-                key={tool.id}
-                onClick={() => {
-                  // 专利交底书直接触发工作流
-                  if (tool.id === "disclosure") {
-                    onSend?.("开始专利交底书流程", "disclosure");
-                    return;
-                  }
-                  setSelectedTool(selectedTool === tool.id ? null : tool.id);
-                }}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors",
-                  selectedTool === tool.id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                )}
-              >
-                {tool.icon}
-                <span>{tool.name}</span>
-              </button>
-            ))}
-          </div>
+          <ToggleGroup
+            type="single"
+            value={selectedTool ?? ""}
+            onValueChange={handleToolChange}
+            className="flex-wrap justify-start"
+          >
+            {tools.map((tool) => {
+              const ToolIcon = tool.icon;
+
+              return (
+                <ToggleGroupItem
+                  key={tool.id}
+                  value={tool.id}
+                  aria-label={tool.description}
+                  size="sm"
+                  className="gap-1.5"
+                >
+                  <ToolIcon />
+                  <span>{tool.name}</span>
+                </ToggleGroupItem>
+              );
+            })}
+          </ToggleGroup>
 
           {/* Right Side - Actions */}
           <div className="flex items-center gap-2">
@@ -330,14 +346,9 @@ export function ChatInput({ onSend }: ChatInputProps) {
                 needsFileUpload ? uploadedFiles.length === 0 : !message.trim()
               }
               size="icon"
-              className={cn(
-                "h-9 w-9 rounded-full transition-all",
-                (needsFileUpload ? uploadedFiles.length > 0 : message.trim())
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "bg-muted text-muted-foreground",
-              )}
+              className="rounded-full"
             >
-              <Send className="h-4 w-4" />
+              <Send data-icon="icon" />
             </Button>
           </div>
         </div>

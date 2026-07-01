@@ -28,10 +28,12 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
@@ -828,25 +830,24 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="X">X</SelectItem>
-                                      <SelectItem value="Y">Y</SelectItem>
-                                      <SelectItem value="A">A</SelectItem>
+                                      <SelectGroup>
+                                        <SelectItem value="X">X</SelectItem>
+                                        <SelectItem value="Y">Y</SelectItem>
+                                        <SelectItem value="A">A</SelectItem>
+                                      </SelectGroup>
                                     </SelectContent>
                                   </Select>
                                 ) : (
-                                  <span
-                                    className={cn(
-                                      "inline-flex items-center justify-center rounded-lg px-3 py-1 text-sm font-bold",
-                                      patent.category === "X" &&
-                                        "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-                                      patent.category === "Y" &&
-                                        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-                                      patent.category === "A" &&
-                                        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-                                    )}
+                                  <Badge
+                                    variant={
+                                      patent.category === "X"
+                                        ? "destructive"
+                                        : "secondary"
+                                    }
+                                    className="px-3 py-1 text-sm font-bold"
                                   >
                                     {patent.category}
-                                  </span>
+                                  </Badge>
                                 )}
                               </td>
                               <td className="px-4 py-4">
@@ -1241,19 +1242,16 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
                                 {patent.differences}
                               </td>
                               <td className="px-4 py-2 text-center">
-                                <span
-                                  className={cn(
-                                    "inline-flex items-center justify-center rounded px-2 py-0.5 text-xs font-bold",
-                                    patent.category === "X" &&
-                                      "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-                                    patent.category === "Y" &&
-                                      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-                                    patent.category === "A" &&
-                                      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-                                  )}
+                                <Badge
+                                  variant={
+                                    patent.category === "X"
+                                      ? "destructive"
+                                      : "secondary"
+                                  }
+                                  className="font-bold"
                                 >
                                   {patent.category}
-                                </span>
+                                </Badge>
                               </td>
                             </tr>
                           ))}
