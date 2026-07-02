@@ -38,6 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -302,13 +303,14 @@ function IPCPageContent() {
               title="刷新"
             >
               <RefreshCw
-                className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+                data-icon="icon"
+                className={loading ? "animate-spin" : undefined}
               />
             </Button>
             <Dialog open={createOpen} onOpenChange={handleCreateOpenChange}>
               <DialogTrigger asChild>
                 <Button>
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus data-icon="inline-start" />
                   新增 IPC
                 </Button>
               </DialogTrigger>
@@ -415,9 +417,11 @@ function IPCPageContent() {
                 <SelectValue placeholder={pageSize} />
               </SelectTrigger>
               <SelectContent side="bottom">
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
+                <SelectGroup>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
             <span>条/页</span>
@@ -546,7 +550,7 @@ function IPCPageContent() {
                           onClick={() => handleEdit(ipc)}
                           title="编辑"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit data-icon="icon" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -554,16 +558,16 @@ function IPCPageContent() {
                           onClick={() => handleCopyVector(ipc.code)}
                           title="复制向量"
                         >
-                          <Copy className="h-4 w-4" />
+                          <Copy data-icon="icon" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteClick(ipc.code)}
                           title="删除"
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 data-icon="icon" />
                         </Button>
                       </div>
                     </TableCell>
@@ -587,7 +591,7 @@ function IPCPageContent() {
             <AlertDialogCancel>取消</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               删除
             </AlertDialogAction>

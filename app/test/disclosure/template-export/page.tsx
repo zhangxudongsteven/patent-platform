@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -141,8 +142,10 @@ export default function TemplateExportPage() {
                     <SelectValue placeholder="选择专利类型" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="发明">发明</SelectItem>
-                    <SelectItem value="实用新型">实用新型</SelectItem>
+                    <SelectGroup>
+                      <SelectItem value="发明">发明</SelectItem>
+                      <SelectItem value="实用新型">实用新型</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>

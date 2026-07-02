@@ -114,7 +114,7 @@ export default function QAPage() {
             className="text-muted-foreground hover:text-foreground"
             disabled={messages.length === 0}
           >
-            <Eraser className="mr-2 h-4 w-4" />
+            <Eraser data-icon="inline-start" />
             清空对话
           </Button>
         </header>
@@ -125,8 +125,8 @@ export default function QAPage() {
             {messages.length === 0 ? (
               /* Welcome Message */
               <div className="flex h-full flex-col items-center justify-center text-center px-4 py-8">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10">
-                  <FileSearch className="h-6 w-6 text-blue-500" />
+                <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-primary/10">
+                  <FileSearch className="text-primary" />
                 </div>
                 <h1 className="text-2xl font-semibold text-foreground mb-2 text-balance">
                   专利知识问答助手

@@ -15,6 +15,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -210,19 +211,21 @@ export default function ProposalTextOptimizationPage() {
                   <SelectValue placeholder="选择优化方式" />
                 </SelectTrigger>
                 <SelectContent>
-                  {optimizationTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      <div className="flex items-center gap-2">
-                        {type.icon}
-                        <div>
-                          <div>{type.label}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {type.description}
+                  <SelectGroup>
+                    {optimizationTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        <div className="flex items-center gap-2">
+                          {type.icon}
+                          <div>
+                            <div>{type.label}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {type.description}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </SelectItem>
-                  ))}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
@@ -247,9 +250,11 @@ export default function ProposalTextOptimizationPage() {
               <div className="flex justify-between text-xs text-muted-foreground">
                 <div>建议输入100-2000字符</div>
                 <div className="space-x-2">
-                  <button
+                  <Button
                     type="button"
-                    className="hover:text-primary"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
                     onClick={() =>
                       setOriginalText(
                         (prev) => prev + "\n\n技术方案包括以下步骤：",
@@ -257,10 +262,12 @@ export default function ProposalTextOptimizationPage() {
                     }
                   >
                     +步骤
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
-                    className="hover:text-primary"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
                     onClick={() =>
                       setOriginalText(
                         (prev) => prev + "\n\n本发明具有以下优点：",
@@ -268,7 +275,7 @@ export default function ProposalTextOptimizationPage() {
                     }
                   >
                     +优点
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
