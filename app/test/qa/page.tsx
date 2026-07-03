@@ -1,32 +1,17 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SimpleChatInput } from "./simple-chat-input";
-import { ChatMessage } from "@/components/chat-message";
-import { Loader2, Eraser, FileSearch } from "lucide-react";
+import { ChatThread } from "@/components/chat/chat-thread";
+import { Eraser, FileSearch } from "lucide-react";
 import { toast } from "sonner";
 import { streamQAAnswer } from "@/lib/service/chat";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  createdAt?: Date;
-  parts?: any[];
-}
+import type { ChatMessageData } from "@/components/chat/types";
 
 export default function QAPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessageData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  // 自动滚动到底部
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
-  }, [messages]);
 
   // 清空对话
   const handleClearChat = () => {
@@ -38,12 +23,11 @@ export default function QAPage() {
     if (isLoading) return;
 
     const userMsgId = Date.now().toString();
-    const userMsg: Message = {
+    const userMsg: ChatMessageData = {
       id: userMsgId,
       role: "user",
       content,
-      createdAt: new Date(),
-      parts: [{ type: "text", text: content }],
+      timestamp: new Date(),
     };
 
     // Optimistically add user message
@@ -70,7 +54,7 @@ export default function QAPage() {
           id: assistantMsgId,
           role: "assistant",
           content: "",
-          createdAt: new Date(),
+          timestamp: new Date(),
         },
       ]);
 
@@ -121,22 +105,23 @@ export default function QAPage() {
 
         {/* Chat Area */}
         <main className="flex flex-1 flex-col overflow-hidden max-h-[80vh]">
-          <div ref={scrollAreaRef} className="flex-1 overflow-y-auto">
-            {messages.length === 0 ? (
-              /* Welcome Message */
-              <div className="flex h-full flex-col items-center justify-center text-center px-4 py-8">
+          <ChatThread
+            messages={messages}
+            isLoading={isLoading}
+            emptyState={
+              <div className="flex h-full flex-col items-center justify-center px-4 py-8 text-center">
                 <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-primary/10">
                   <FileSearch className="text-primary" />
                 </div>
-                <h1 className="text-2xl font-semibold text-foreground mb-2 text-balance">
+                <h1 className="mb-2 text-2xl font-semibold text-foreground text-balance">
                   专利知识问答助手
                 </h1>
-                <p className="text-sm text-muted-foreground max-w-md text-balance mb-6">
+                <p className="mb-6 max-w-md text-sm text-muted-foreground text-balance">
                   专业解答专利流程、制度、撰写等问题
                 </p>
 
                 {/* 快捷问题建议 */}
-                <div className="flex flex-wrap justify-center gap-2 max-w-2xl">
+                <div className="flex max-w-2xl flex-wrap justify-center gap-2">
                   {[
                     "专利申报流程有哪些步骤？",
                     "如何撰写高质量的交底书？",
@@ -148,48 +133,15 @@ export default function QAPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleSend(suggestion)}
-                      className="bg-background hover:bg-accent text-muted-foreground hover:text-foreground"
+                      className="bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
                     >
                       {suggestion}
                     </Button>
                   ))}
                 </div>
               </div>
-            ) : (
-              /* Chat Messages */
-              <div className="flex flex-col">
-                {messages.map((message) => (
-                  <ChatMessage
-                    key={message.id}
-                    message={{
-                      ...message,
-                      timestamp: message.createdAt || new Date(),
-                    }}
-                  />
-                ))}
-                {isLoading &&
-                  messages[messages.length - 1]?.role === "user" && (
-                    <div className="flex w-full gap-4 px-4 py-6 bg-muted/30">
-                      <div className="flex w-full max-w-3xl mx-auto gap-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        </div>
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-foreground">
-                              专利智能助手
-                            </span>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            正在思考...
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-              </div>
-            )}
-          </div>
+            }
+          />
 
           {/* Chat Input Area */}
           <div className="bg-background">

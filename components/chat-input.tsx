@@ -4,82 +4,39 @@ import React from "react";
 
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
-import {
-  Send,
-  FileSearch,
-  FileText,
-  FileBarChart,
-  FileScan,
-  Upload,
-  X,
-  Search,
-  type LucideIcon,
-} from "lucide-react";
+import { Send, FileText, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-
-interface Tool {
-  id: string;
-  name: string;
-  icon: LucideIcon;
-  description: string;
-}
-
-const tools: Tool[] = [
-  {
-    id: "patent-search",
-    name: "专利检索",
-    icon: Search,
-    description: "全库专利检索",
-  },
-  {
-    id: "disclosure",
-    name: "专利交底书",
-    icon: FileText,
-    description: "撰写技术交底书",
-  },
-  {
-    id: "search-formula",
-    name: "专利检索式",
-    icon: FileSearch,
-    description: "生成专业检索式",
-  },
-  {
-    id: "report",
-    name: "专利检索报告",
-    icon: FileBarChart,
-    description: "生成检索报告",
-  },
-  {
-    id: "analysis",
-    name: "专利解析",
-    icon: FileScan,
-    description: "深度解析专利",
-  },
-];
+import {
+  chatTools,
+  formatUploadedFileMessage,
+  getPlaceholderText,
+  getUploadConfig,
+  getValidFiles,
+  needsFileUpload,
+  toUploadedFileMeta,
+} from "@/components/chat/tool-config";
+import type { ChatSubmit, ChatToolId } from "@/components/chat/types";
 
 interface ChatInputProps {
-  onSend?: (message: string, tool?: string) => void;
+  onSubmit?: (payload: ChatSubmit) => void;
 }
 
-export function ChatInput({ onSend }: ChatInputProps) {
+export function ChatInput({ onSubmit }: ChatInputProps) {
   const [message, setMessage] = useState("");
-  const [selectedTool, setSelectedTool] = useState<string | null>(null);
+  const [selectedTool, setSelectedTool] = useState<ChatToolId | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 判断是否需要文件上传
-  const needsFileUpload =
-    selectedTool === "search-formula" ||
-    selectedTool === "report" ||
-    selectedTool === "analysis";
+  const uploadConfig = getUploadConfig(selectedTool);
+  const requiresFileUpload = needsFileUpload(selectedTool);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (needsFileUpload) {
+    if (requiresFileUpload) {
       setIsDragging(true);
     }
   };
@@ -95,24 +52,15 @@ export function ChatInput({ onSend }: ChatInputProps) {
     e.stopPropagation();
     setIsDragging(false);
 
-    if (!needsFileUpload) return;
+    if (!requiresFileUpload) return;
 
     const files = Array.from(e.dataTransfer.files);
     if (files.length === 0) return;
 
-    // 根据工具类型过滤文件
-    const validExtensions =
-      selectedTool === "analysis"
-        ? [".doc", ".docx", ".pdf"]
-        : [".doc", ".docx"];
-
-    const validFiles = files.filter((file) => {
-      const lowerName = file.name.toLowerCase();
-      return validExtensions.some((ext) => lowerName.endsWith(ext));
-    });
+    const validFiles = getValidFiles(files, selectedTool);
 
     if (validFiles.length > 0) {
-      if (selectedTool === "analysis") {
+      if (uploadConfig?.multiple) {
         setUploadedFiles((prev) => [...prev, ...validFiles]);
       } else {
         setUploadedFiles([validFiles[0]]);
@@ -123,17 +71,41 @@ export function ChatInput({ onSend }: ChatInputProps) {
   const handleSend = () => {
     // 专利交底书直接进入工作流
     if (selectedTool === "disclosure") {
-      onSend?.("开始专利交底书流程", selectedTool);
+      onSubmit?.({
+        type: "workflow",
+        toolId: selectedTool,
+        message: "开始专利交底书流程",
+      });
       setSelectedTool(null);
       return;
     }
 
-    if (needsFileUpload && uploadedFiles.length > 0) {
-      const fileNames = uploadedFiles.map((f) => f.name).join("、");
-      onSend?.(`已上传文件：${fileNames}`, selectedTool || undefined);
+    if (requiresFileUpload && selectedTool && uploadedFiles.length > 0) {
+      const files = uploadedFiles.map(toUploadedFileMeta);
+      onSubmit?.({
+        type: "workflow",
+        toolId: selectedTool,
+        files,
+        message: formatUploadedFileMessage(files),
+      });
       setUploadedFiles([]);
-    } else if (!needsFileUpload && message.trim()) {
-      onSend?.(message, selectedTool || undefined);
+    } else if (!requiresFileUpload && message.trim()) {
+      const trimmedMessage = message.trim();
+
+      if (selectedTool === "patent-search") {
+        onSubmit?.({
+          type: "workflow",
+          toolId: selectedTool,
+          message: trimmedMessage,
+        });
+      } else {
+        onSubmit?.({
+          type: "chat",
+          message: trimmedMessage,
+          toolId: selectedTool || undefined,
+        });
+      }
+
       setMessage("");
     }
   };
@@ -146,9 +118,9 @@ export function ChatInput({ onSend }: ChatInputProps) {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const files = getValidFiles(Array.from(e.target.files || []), selectedTool);
     if (files.length > 0) {
-      if (selectedTool === "analysis") {
+      if (uploadConfig?.multiple) {
         setUploadedFiles((prev) => [...prev, ...files]);
       } else {
         setUploadedFiles([files[0]]);
@@ -176,39 +148,18 @@ export function ChatInput({ onSend }: ChatInputProps) {
     }
 
     if (value === "disclosure") {
-      onSend?.("开始专利交底书流程", "disclosure");
+      onSubmit?.({
+        type: "workflow",
+        toolId: "disclosure",
+        message: "开始专利交底书流程",
+      });
       setSelectedTool(null);
       setUploadedFiles([]);
       return;
     }
 
-    setSelectedTool(value);
+    setSelectedTool(value as ChatToolId);
     setUploadedFiles([]);
-  };
-
-  const getUploadText = () => {
-    if (selectedTool === "analysis")
-      return "点击或拖拽上传专利文件（支持多选）";
-    if (selectedTool === "search-formula") return "点击或拖拽上传技术交底书";
-    if (selectedTool === "report") return "点击或拖拽上传技术交底书";
-    return "点击或拖拽上传文件";
-  };
-
-  const getAcceptTypes = () => {
-    if (selectedTool === "analysis") return ".doc,.docx,.pdf";
-    return ".doc,.docx";
-  };
-
-  const getFormatText = () => {
-    if (selectedTool === "analysis") return "支持 DOC、DOCX、PDF 格式";
-    return "支持 DOC、DOCX 格式";
-  };
-
-  const getPlaceholderText = () => {
-    if (selectedTool === "patent-search") {
-      return "请输入关键词进行检索...";
-    }
-    return "向专利助手提问...";
   };
 
   return (
@@ -219,14 +170,15 @@ export function ChatInput({ onSend }: ChatInputProps) {
         <input
           ref={fileInputRef}
           type="file"
-          accept={getAcceptTypes()}
+          accept={uploadConfig?.accept}
           onChange={handleFileChange}
           className="hidden"
-          multiple={selectedTool === "analysis"}
+          multiple={uploadConfig?.multiple}
+          aria-label="上传文件"
         />
 
         {/* Text Input Area or File Upload Area */}
-        {needsFileUpload ? (
+        {requiresFileUpload ? (
           <div
             className={cn(
               "p-4 transition-colors",
@@ -241,12 +193,12 @@ export function ChatInput({ onSend }: ChatInputProps) {
                 {uploadedFiles.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between rounded-lg border border-border bg-accent/50 px-4 py-3"
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border bg-accent/50 px-4 py-3"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       <FileText className="size-5 text-primary" />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-foreground">
+                      <div className="flex min-w-0 flex-col">
+                        <span className="truncate text-sm font-medium text-foreground">
                           {file.name}
                         </span>
                         <span className="text-xs text-muted-foreground">
@@ -259,6 +211,7 @@ export function ChatInput({ onSend }: ChatInputProps) {
                       size="icon"
                       onClick={() => handleRemoveFile(index)}
                       className="size-8 text-muted-foreground hover:text-foreground"
+                      aria-label={`移除文件 ${file.name}`}
                     >
                       <X data-icon="icon" />
                     </Button>
@@ -286,13 +239,13 @@ export function ChatInput({ onSend }: ChatInputProps) {
                   isDragging && "border-primary bg-primary/10",
                 )}
               >
-                <Upload className="size-6 text-muted-foreground" />
-                <div className="flex flex-col items-start">
+                <Upload data-icon="inline-start" />
+                <div className="flex min-w-0 flex-col items-start">
                   <span className="text-sm font-medium text-foreground">
-                    {getUploadText()}
+                    {uploadConfig?.prompt || "点击或拖拽上传文件"}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {getFormatText()}
+                    {uploadConfig?.formatText || "支持 DOC、DOCX 格式"}
                   </span>
                 </div>
               </Button>
@@ -304,7 +257,8 @@ export function ChatInput({ onSend }: ChatInputProps) {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={getPlaceholderText()}
+              placeholder={getPlaceholderText(selectedTool)}
+              name="chat-message"
               className="max-h-[200px] min-h-[60px] resize-none border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0"
               rows={2}
             />
@@ -320,7 +274,7 @@ export function ChatInput({ onSend }: ChatInputProps) {
             onValueChange={handleToolChange}
             className="flex-wrap justify-start"
           >
-            {tools.map((tool) => {
+            {chatTools.map((tool) => {
               const ToolIcon = tool.icon;
 
               return (
@@ -343,10 +297,13 @@ export function ChatInput({ onSend }: ChatInputProps) {
             <Button
               onClick={handleSend}
               disabled={
-                needsFileUpload ? uploadedFiles.length === 0 : !message.trim()
+                requiresFileUpload
+                  ? uploadedFiles.length === 0
+                  : !message.trim()
               }
               size="icon"
               className="rounded-full"
+              aria-label="发送"
             >
               <Send data-icon="icon" />
             </Button>

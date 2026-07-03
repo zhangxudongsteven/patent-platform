@@ -1,32 +1,25 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { ChatSidebar } from "@/components/chat-sidebar";
 import { ChatInput } from "@/components/chat-input";
-import { ChatMessage, type Message } from "@/components/chat-message";
+import { ChatThread } from "@/components/chat/chat-thread";
 import { SearchFormulaWorkflow } from "@/components/workflows/search-formula-workflow";
 import { ReportWorkflow } from "@/components/workflows/report-workflow";
 import { DisclosureWorkflow } from "@/components/workflows/disclosure-workflow";
 import { AnalysisWorkflow } from "@/components/workflows/analysis-workflow";
 import { KeywordSearchWorkflow } from "@/components/workflows/keyword-search-workflow";
-import { Button } from "@/components/ui/button";
 import { streamQAAnswer } from "@/lib/service/chat";
 import { toast } from "sonner";
-import { Bot } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Spinner } from "@/components/ui/spinner";
-
-// 工具名称映射
-const toolNames: Record<string, string> = {
-  "patent-search": "专利检索",
-  "search-formula": "专利检索式",
-  disclosure: "专利交底书",
-  report: "专利检索报告",
-  analysis: "专利解析",
-};
+import { toolNames } from "@/components/chat/tool-config";
+import type {
+  ChatMessageData,
+  ChatSubmit,
+  ChatToolId,
+} from "@/components/chat/types";
 
 // 模拟 AI 回复
-const getAIResponse = (userMessage: string, tool?: string): string => {
+const getAIResponse = (userMessage: string, tool?: ChatToolId): string => {
   if (tool === "patent-search") {
     return "我将为您进行全库专利检索。支持的检索方式包括：\n\n1. 关键词检索\n2. 申请人/发明人检索\n3. 分类号检索\n4. 语义检索\n\n请输入您想要检索的内容，例如“人工智能 图像识别”或“华为技术有限公司”。";
   }
@@ -47,7 +40,7 @@ const getAIResponse = (userMessage: string, tool?: string): string => {
 };
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessageData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSearchFormula, setShowSearchFormula] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -57,58 +50,57 @@ export default function Home() {
   const [uploadedFileNames, setUploadedFileNames] = useState<string[]>([]);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // 自动滚动到底部
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
-  }, [messages, isLoading]);
-
-  const handleSendMessage = async (content: string, tool?: string) => {
+  const handleChatSubmit = async (payload: ChatSubmit) => {
     if (isLoading) return;
 
-    // 如果是专利检索工具，直接打开关键词搜索工作流页面
-    if (tool === "patent-search") {
-      setSearchQuery(content);
-      setShowKeywordSearch(true);
+    if (payload.type === "workflow") {
+      const fileNames = payload.files?.map((file) => file.name) ?? [];
+      const firstFileName = fileNames[0] || "";
+
+      if (payload.toolId === "patent-search") {
+        setSearchQuery(payload.message || "");
+        setShowKeywordSearch(true);
+        return;
+      }
+
+      if (payload.toolId === "search-formula") {
+        setUploadedFileName(firstFileName);
+        setShowSearchFormula(true);
+        return;
+      }
+
+      if (payload.toolId === "report") {
+        setUploadedFileName(firstFileName);
+        setShowReport(true);
+        return;
+      }
+
+      if (payload.toolId === "disclosure") {
+        setShowDisclosure(true);
+        return;
+      }
+
+      if (payload.toolId === "analysis") {
+        setUploadedFileNames(fileNames);
+        setShowAnalysis(true);
+        return;
+      }
+    }
+
+    if (payload.type !== "chat") {
       return;
     }
 
-    // 如果是专利检索式工具且上传了文件，打开专用工作流页面
-    if (tool === "search-formula" && content.startsWith("已上传文件：")) {
-      const fileName = content.replace("已上传文件：", "");
-      setUploadedFileName(fileName);
-      setShowSearchFormula(true);
-      return;
-    }
+    const content = payload.message;
+    const tool = payload.toolId;
 
-    // 如果是专利检索报告工具且上传了文件，打开专用工作流页面
-    if (tool === "report" && content.startsWith("已上传文件：")) {
-      const fileName = content.replace("已上传文件：", "");
-      setUploadedFileName(fileName);
-      setShowReport(true);
-      return;
-    }
-
-    // 如果是专利交底书工具，直接打开工作流页面
-    if (tool === "disclosure") {
-      setShowDisclosure(true);
-      return;
-    }
-
-    // 如果是专利解析工具且上传了文件，打开专用工作流页面
-    if (tool === "analysis" && content.startsWith("已上传文件：")) {
-      const fileNamesStr = content.replace("已上传文件：", "");
-      const fileNames = fileNamesStr.split("、");
-      setUploadedFileNames(fileNames);
-      setShowAnalysis(true);
+    if (!content.trim()) {
       return;
     }
 
     // 添加用户消息
-    const userMessage: Message = {
+    const userMessage: ChatMessageData = {
       id: Date.now().toString(),
       role: "user",
       content,
@@ -121,7 +113,7 @@ export default function Home() {
     // 如果有具体的 tool（但没有触发工作流），使用静态引导回复
     if (tool) {
       setTimeout(() => {
-        const aiMessage: Message = {
+        const aiMessage: ChatMessageData = {
           id: (Date.now() + 1).toString(),
           role: "assistant",
           content: getAIResponse(content, tool),
@@ -190,13 +182,13 @@ export default function Home() {
     setShowAnalysis(false);
     setShowKeywordSearch(false);
     setUploadedFileName("");
+    setUploadedFileNames([]);
     setSearchQuery("");
   };
 
   const handleNewChat = () => {
     setMessages([]);
     handleBackFromWorkflow();
-    setUploadedFileNames([]);
     toast.success("对话已重置");
   };
 
@@ -287,64 +279,11 @@ export default function Home() {
 
         {/* Chat Area */}
         <main className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
-            {messages.length === 0 ? (
-              /* Welcome Message */
-              <div className="flex h-full flex-col items-center justify-center text-center px-4">
-                <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="h-8 w-8 text-primary"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  >
-                    <path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                  </svg>
-                </div>
-                <h1 className="text-3xl font-semibold text-foreground mb-2 text-balance">
-                  你好，我是专利智能助手
-                </h1>
-                <p className="text-muted-foreground max-w-md text-balance">
-                  我可以帮助您进行专利检索、撰写交底书、生成检索报告以及深度解析专利文献
-                </p>
-              </div>
-            ) : (
-              /* Chat Messages */
-              <div className="flex flex-col">
-                {messages.map((message) => (
-                  <ChatMessage key={message.id} message={message} />
-                ))}
-                {isLoading &&
-                  messages[messages.length - 1]?.role === "user" && (
-                    <div className="flex w-full gap-4 bg-muted/30 px-4 py-6">
-                      <div className="mx-auto flex w-full max-w-3xl gap-4">
-                        <Avatar className="size-8 rounded-lg bg-primary text-primary-foreground">
-                          <AvatarFallback className="rounded-lg bg-transparent">
-                            <Bot />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-1 flex-col gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-foreground">
-                              专利智能助手
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Spinner />
-                            正在思考...
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-              </div>
-            )}
-          </div>
+          <ChatThread messages={messages} isLoading={isLoading} />
 
           {/* Chat Input - Fixed at bottom */}
           <div className="bg-background">
-            <ChatInput onSend={handleSendMessage} />
+            <ChatInput onSubmit={handleChatSubmit} />
           </div>
         </main>
 

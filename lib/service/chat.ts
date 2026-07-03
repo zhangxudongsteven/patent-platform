@@ -8,6 +8,9 @@ import { CallbackHandler } from "@langfuse/langchain";
 
 const langfuseHandler = new CallbackHandler();
 
+const MISSING_OPENAI_API_KEY_MESSAGE =
+  "当前未配置 OPENAI_API_KEY，无法调用问答模型。请配置环境变量后重试。";
+
 const QA_SYSTEM_PROMPT = `你是一个专业的专利工作流程客服助手，专门回答关于专利流程、专利知识、公司内部专利相关制度等问题。
 你的角色设定：
 1. **专业领域**：专利申报流程、专利制度、技术背景撰写、专利检索等
@@ -30,6 +33,10 @@ export async function generateQAAnswer(
   chatHistory: Array<{ role: "user" | "assistant"; content: string }>,
   context?: string,
 ): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
+    return MISSING_OPENAI_API_KEY_MESSAGE;
+  }
+
   const model = new ChatOpenAI({
     modelName: process.env.OPENAI_CHAT_MODEL,
     temperature: 0.7,
@@ -71,6 +78,14 @@ export async function streamQAAnswer(
   chatHistory: Array<{ role: "user" | "assistant"; content: string }>,
   context?: string,
 ) {
+  if (!process.env.OPENAI_API_KEY) {
+    async function* missingConfigGenerator() {
+      yield MISSING_OPENAI_API_KEY_MESSAGE;
+    }
+
+    return missingConfigGenerator();
+  }
+
   const model = new ChatOpenAI({
     modelName: process.env.OPENAI_CHAT_MODEL,
     temperature: 0.7,

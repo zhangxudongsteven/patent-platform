@@ -4,17 +4,12 @@ import { cn } from "@/lib/utils";
 import { User, Bot } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import type { ChatMessageData } from "@/components/chat/types";
 
-export interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  tool?: string;
-}
+export type Message = ChatMessageData;
 
 interface ChatMessageProps {
-  message: Message;
+  message: ChatMessageData;
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {
@@ -41,19 +36,22 @@ export function ChatMessage({ message }: ChatMessageProps) {
           </AvatarFallback>
         </Avatar>
 
-        <div className="flex flex-1 flex-col gap-2 overflow-hidden">
-          <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden">
+          <div className="flex min-w-0 items-center gap-2">
             <span className="text-sm font-medium text-foreground">
               {isUser ? "你" : "专利智能助手"}
             </span>
             {message.tool && (
-              <Badge variant="secondary" className="font-normal">
+              <Badge
+                variant="secondary"
+                className="max-w-full truncate font-normal"
+              >
                 {message.tool}
               </Badge>
             )}
           </div>
           <div className="prose prose-sm max-w-none text-foreground leading-relaxed">
-            <p className="whitespace-pre-wrap">{message.content}</p>
+            <p className="break-words whitespace-pre-wrap">{message.content}</p>
           </div>
         </div>
       </div>

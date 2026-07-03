@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 优化侧边栏、报告工作流和测试页的 shadcn/ui 组件组合，改进可访问性与语义化样式。
 - 为侧边栏对话更多操作补充“功能未实现”通知反馈，避免空操作误导。
 - 拆分并补充 agent 参考文档与 UI 技能策略说明，保留 `AGENTS.md` 的核心规则入口。
+- 将首页聊天与工作流跳转改为结构化提交契约，移除基于上传文案的内部分流。
 
 ## [0.1.1] - 2026-07-03
 

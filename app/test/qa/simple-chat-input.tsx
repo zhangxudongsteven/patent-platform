@@ -34,7 +34,8 @@ export function SimpleChatInput({ onSend, disabled }: SimpleChatInputProps) {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="输入您的问题..."
+          placeholder="输入您的问题…"
+          name="qa-question"
           className="max-h-[200px] min-h-[50px] flex-1 resize-none border-0 bg-transparent px-4 py-3 shadow-none focus-visible:ring-0"
           rows={1}
           disabled={disabled}
