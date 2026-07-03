@@ -2,17 +2,14 @@
 
 import { cn } from "@/lib/utils";
 import { User, Bot } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import type { ChatMessageData } from "@/components/chat/types";
 
-export interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  tool?: string;
-}
+export type Message = ChatMessageData;
 
 interface ChatMessageProps {
-  message: Message;
+  message: ChatMessageData;
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {
@@ -25,33 +22,36 @@ export function ChatMessage({ message }: ChatMessageProps) {
         isUser ? "bg-background" : "bg-muted/30",
       )}
     >
-      <div className="flex w-full max-w-3xl mx-auto gap-4">
-        {/* Avatar */}
-        <div
+      <div className="mx-auto flex w-full max-w-3xl gap-4">
+        <Avatar
           className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+            "size-8 rounded-lg",
             isUser
               ? "bg-primary/10 text-primary"
               : "bg-primary text-primary-foreground",
           )}
         >
-          {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-        </div>
+          <AvatarFallback className="rounded-lg bg-transparent">
+            {isUser ? <User /> : <Bot />}
+          </AvatarFallback>
+        </Avatar>
 
-        {/* Content */}
-        <div className="flex-1 space-y-2 overflow-hidden">
-          <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden">
+          <div className="flex min-w-0 items-center gap-2">
             <span className="text-sm font-medium text-foreground">
               {isUser ? "你" : "专利智能助手"}
             </span>
             {message.tool && (
-              <span className="text-xs text-muted-foreground">
-                · {message.tool}
-              </span>
+              <Badge
+                variant="secondary"
+                className="max-w-full truncate font-normal"
+              >
+                {message.tool}
+              </Badge>
             )}
           </div>
           <div className="prose prose-sm max-w-none text-foreground leading-relaxed">
-            <p className="whitespace-pre-wrap">{message.content}</p>
+            <p className="break-words whitespace-pre-wrap">{message.content}</p>
           </div>
         </div>
       </div>

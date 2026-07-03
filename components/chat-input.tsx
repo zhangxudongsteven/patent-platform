@@ -4,87 +4,42 @@ import React from "react";
 
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
-import {
-  Send,
-  Paperclip,
-  Globe,
-  FileSearch,
-  FileText,
-  FileBarChart,
-  FileScan,
-  Upload,
-  X,
-  Search,
-} from "lucide-react";
+import { Send, FileText, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-interface Tool {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-  description: string;
-  color: string;
-}
-
-const tools: Tool[] = [
-  {
-    id: "patent-search",
-    name: "专利检索",
-    icon: <Search className="h-5 w-5" />,
-    description: "全库专利检索",
-    color: "bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20",
-  },
-  {
-    id: "disclosure",
-    name: "专利交底书",
-    icon: <FileText className="h-5 w-5" />,
-    description: "撰写技术交底书",
-    color: "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20",
-  },
-  {
-    id: "search-formula",
-    name: "专利检索式",
-    icon: <FileSearch className="h-5 w-5" />,
-    description: "生成专业检索式",
-    color: "bg-blue-500/10 text-blue-600 hover:bg-blue-500/20",
-  },
-  {
-    id: "report",
-    name: "专利检索报告",
-    icon: <FileBarChart className="h-5 w-5" />,
-    description: "生成检索报告",
-    color: "bg-amber-500/10 text-amber-600 hover:bg-amber-500/20",
-  },
-  {
-    id: "analysis",
-    name: "专利解析",
-    icon: <FileScan className="h-5 w-5" />,
-    description: "深度解析专利",
-    color: "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20",
-  },
-];
+import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  chatTools,
+  formatUploadedFileMessage,
+  getToolConfig,
+  getPlaceholderText,
+  getUploadConfig,
+  getValidFiles,
+  needsFileUpload,
+  toUploadedFileMeta,
+} from "@/components/chat/tool-config";
+import type { ChatSubmit, ChatToolId } from "@/components/chat/types";
+import { toast } from "sonner";
 
 interface ChatInputProps {
-  onSend?: (message: string, tool?: string) => void;
+  onSubmit?: (payload: ChatSubmit) => boolean | Promise<boolean | void> | void;
+  disabled?: boolean;
 }
 
-export function ChatInput({ onSend }: ChatInputProps) {
+export function ChatInput({ onSubmit, disabled = false }: ChatInputProps) {
   const [message, setMessage] = useState("");
-  const [selectedTool, setSelectedTool] = useState<string | null>(null);
+  const [selectedTool, setSelectedTool] = useState<ChatToolId | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 判断是否需要文件上传
-  const needsFileUpload =
-    selectedTool === "search-formula" ||
-    selectedTool === "report" ||
-    selectedTool === "analysis";
+  const uploadConfig = getUploadConfig(selectedTool);
+  const requiresFileUpload = needsFileUpload(selectedTool);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (needsFileUpload) {
+    if (requiresFileUpload) {
       setIsDragging(true);
     }
   };
@@ -95,29 +50,38 @@ export function ChatInput({ onSend }: ChatInputProps) {
     setIsDragging(false);
   };
 
+  const showInvalidFileToast = (files: File[], validFiles: File[]) => {
+    const invalidFiles = files.filter((file) => !validFiles.includes(file));
+
+    if (invalidFiles.length === 0) {
+      return;
+    }
+
+    const toolName = getToolConfig(selectedTool)?.name ?? "当前工具";
+    const formatText = uploadConfig?.formatText ?? "请上传支持的文件格式";
+    toast.error(
+      `${toolName}不支持：${invalidFiles.map((file) => file.name).join("、")}`,
+      {
+        description: formatText,
+      },
+    );
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
 
-    if (!needsFileUpload) return;
+    if (disabled || !requiresFileUpload) return;
 
     const files = Array.from(e.dataTransfer.files);
     if (files.length === 0) return;
 
-    // 根据工具类型过滤文件
-    const validExtensions =
-      selectedTool === "analysis"
-        ? [".doc", ".docx", ".pdf"]
-        : [".doc", ".docx"];
-
-    const validFiles = files.filter((file) => {
-      const lowerName = file.name.toLowerCase();
-      return validExtensions.some((ext) => lowerName.endsWith(ext));
-    });
+    const validFiles = getValidFiles(files, selectedTool);
+    showInvalidFileToast(files, validFiles);
 
     if (validFiles.length > 0) {
-      if (selectedTool === "analysis") {
+      if (uploadConfig?.multiple) {
         setUploadedFiles((prev) => [...prev, ...validFiles]);
       } else {
         setUploadedFiles([validFiles[0]]);
@@ -125,35 +89,71 @@ export function ChatInput({ onSend }: ChatInputProps) {
     }
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
+    if (disabled) return;
+
     // 专利交底书直接进入工作流
     if (selectedTool === "disclosure") {
-      onSend?.("开始专利交底书流程", selectedTool);
-      setSelectedTool(null);
+      const accepted = await onSubmit?.({
+        type: "workflow",
+        toolId: selectedTool,
+        message: "开始专利交底书流程",
+      });
+      if (accepted !== false) {
+        setSelectedTool(null);
+      }
       return;
     }
 
-    if (needsFileUpload && uploadedFiles.length > 0) {
-      const fileNames = uploadedFiles.map((f) => f.name).join("、");
-      onSend?.(`已上传文件：${fileNames}`, selectedTool || undefined);
-      setUploadedFiles([]);
-    } else if (!needsFileUpload && message.trim()) {
-      onSend?.(message, selectedTool || undefined);
-      setMessage("");
+    if (requiresFileUpload && selectedTool && uploadedFiles.length > 0) {
+      const files = uploadedFiles.map(toUploadedFileMeta);
+      const accepted = await onSubmit?.({
+        type: "workflow",
+        toolId: selectedTool,
+        files,
+        message: formatUploadedFileMessage(files),
+      });
+      if (accepted !== false) {
+        setUploadedFiles([]);
+      }
+    } else if (!requiresFileUpload && message.trim()) {
+      const trimmedMessage = message.trim();
+      let accepted: boolean | void | undefined;
+
+      if (selectedTool === "patent-search") {
+        accepted = await onSubmit?.({
+          type: "workflow",
+          toolId: selectedTool,
+          message: trimmedMessage,
+        });
+      } else {
+        accepted = await onSubmit?.({
+          type: "chat",
+          message: trimmedMessage,
+          toolId: selectedTool || undefined,
+        });
+      }
+
+      if (accepted !== false) {
+        setMessage("");
+      }
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
-      handleSend();
+      void handleSend();
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const selectedFiles = Array.from(e.target.files || []);
+    const files = getValidFiles(selectedFiles, selectedTool);
+    showInvalidFileToast(selectedFiles, files);
+
     if (files.length > 0) {
-      if (selectedTool === "analysis") {
+      if (uploadConfig?.multiple) {
         setUploadedFiles((prev) => [...prev, ...files]);
       } else {
         setUploadedFiles([files[0]]);
@@ -166,36 +166,39 @@ export function ChatInput({ onSend }: ChatInputProps) {
   };
 
   const handleUploadClick = () => {
+    if (disabled) return;
     fileInputRef.current?.click();
   };
 
   const handleRemoveFile = (index: number) => {
+    if (disabled) return;
     setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const getUploadText = () => {
-    if (selectedTool === "analysis")
-      return "点击或拖拽上传专利文件（支持多选）";
-    if (selectedTool === "search-formula") return "点击或拖拽上传技术交底书";
-    if (selectedTool === "report") return "点击或拖拽上传技术交底书";
-    return "点击或拖拽上传文件";
-  };
+  const handleToolChange = async (value: string) => {
+    if (disabled) return;
 
-  const getAcceptTypes = () => {
-    if (selectedTool === "analysis") return ".doc,.docx,.pdf";
-    return ".doc,.docx";
-  };
-
-  const getFormatText = () => {
-    if (selectedTool === "analysis") return "支持 DOC、DOCX、PDF 格式";
-    return "支持 DOC、DOCX 格式";
-  };
-
-  const getPlaceholderText = () => {
-    if (selectedTool === "patent-search") {
-      return "请输入关键词进行检索...";
+    if (!value) {
+      setSelectedTool(null);
+      setUploadedFiles([]);
+      return;
     }
-    return "向专利助手提问...";
+
+    if (value === "disclosure") {
+      const accepted = await onSubmit?.({
+        type: "workflow",
+        toolId: "disclosure",
+        message: "开始专利交底书流程",
+      });
+      if (accepted !== false) {
+        setSelectedTool(null);
+        setUploadedFiles([]);
+      }
+      return;
+    }
+
+    setSelectedTool(value as ChatToolId);
+    setUploadedFiles([]);
   };
 
   return (
@@ -206,14 +209,16 @@ export function ChatInput({ onSend }: ChatInputProps) {
         <input
           ref={fileInputRef}
           type="file"
-          accept={getAcceptTypes()}
+          accept={uploadConfig?.accept}
           onChange={handleFileChange}
           className="hidden"
-          multiple={selectedTool === "analysis"}
+          multiple={uploadConfig?.multiple}
+          disabled={disabled}
+          aria-label="上传文件"
         />
 
         {/* Text Input Area or File Upload Area */}
-        {needsFileUpload ? (
+        {requiresFileUpload ? (
           <div
             className={cn(
               "p-4 transition-colors",
@@ -228,12 +233,12 @@ export function ChatInput({ onSend }: ChatInputProps) {
                 {uploadedFiles.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between rounded-lg border border-border bg-accent/50 px-4 py-3"
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border bg-accent/50 px-4 py-3"
                   >
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-primary" />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-foreground">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <FileText className="size-5 text-primary" />
+                      <div className="flex min-w-0 flex-col">
+                        <span className="truncate text-sm font-medium text-foreground">
                           {file.name}
                         </span>
                         <span className="text-xs text-muted-foreground">
@@ -245,51 +250,61 @@ export function ChatInput({ onSend }: ChatInputProps) {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleRemoveFile(index)}
-                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      disabled={disabled}
+                      className="size-8 text-muted-foreground hover:text-foreground"
+                      aria-label={`移除文件 ${file.name}`}
                     >
-                      <X className="h-4 w-4" />
+                      <X data-icon="icon" />
                     </Button>
                   </div>
                 ))}
                 {selectedTool === "analysis" && (
-                  <button
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={handleUploadClick}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-accent/30 py-2 text-sm text-muted-foreground transition-colors hover:border-primary hover:bg-accent/50 hover:text-foreground"
+                    disabled={disabled}
+                    className="h-auto w-full border-dashed py-2 text-muted-foreground"
                   >
-                    <Upload className="h-4 w-4" />
+                    <Upload data-icon="inline-start" />
                     继续上传（或拖拽文件）
-                  </button>
+                  </Button>
                 )}
               </div>
             ) : (
-              <button
+              <Button
+                type="button"
+                variant="outline"
                 onClick={handleUploadClick}
+                disabled={disabled}
                 className={cn(
-                  "flex w-full items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border bg-accent/30 px-4 py-8 transition-colors hover:border-primary hover:bg-accent/50",
+                  "h-auto w-full justify-center gap-3 border-dashed px-4 py-8 text-left",
                   isDragging && "border-primary bg-primary/10",
                 )}
               >
-                <Upload className="h-6 w-6 text-muted-foreground" />
-                <div className="flex flex-col items-start">
+                <Upload data-icon="inline-start" />
+                <div className="flex min-w-0 flex-col items-start">
                   <span className="text-sm font-medium text-foreground">
-                    {getUploadText()}
+                    {uploadConfig?.prompt || "点击或拖拽上传文件"}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {getFormatText()}
+                    {uploadConfig?.formatText || "支持 DOC、DOCX 格式"}
                   </span>
                 </div>
-              </button>
+              </Button>
             )}
           </div>
         ) : (
           <div className="p-4">
-            <textarea
+            <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={getPlaceholderText()}
-              className="w-full resize-none bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[60px] max-h-[200px]"
+              placeholder={getPlaceholderText(selectedTool)}
+              name="chat-message"
+              className="max-h-[200px] min-h-[60px] resize-none border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0"
               rows={2}
+              disabled={disabled}
             />
           </div>
         )}
@@ -297,47 +312,46 @@ export function ChatInput({ onSend }: ChatInputProps) {
         {/* Toolbar */}
         <div className="flex items-center justify-between border-t border-border px-4 py-3">
           {/* Left Side - Tool Options */}
-          <div className="flex items-center gap-2">
-            {tools.map((tool) => (
-              <button
-                key={tool.id}
-                onClick={() => {
-                  // 专利交底书直接触发工作流
-                  if (tool.id === "disclosure") {
-                    onSend?.("开始专利交底书流程", "disclosure");
-                    return;
-                  }
-                  setSelectedTool(selectedTool === tool.id ? null : tool.id);
-                }}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors",
-                  selectedTool === tool.id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                )}
-              >
-                {tool.icon}
-                <span>{tool.name}</span>
-              </button>
-            ))}
-          </div>
+          <ToggleGroup
+            type="single"
+            value={selectedTool ?? ""}
+            onValueChange={handleToolChange}
+            className="flex-wrap justify-start"
+            disabled={disabled}
+          >
+            {chatTools.map((tool) => {
+              const ToolIcon = tool.icon;
+
+              return (
+                <ToggleGroupItem
+                  key={tool.id}
+                  value={tool.id}
+                  aria-label={tool.description}
+                  size="sm"
+                  className="gap-1.5"
+                >
+                  <ToolIcon />
+                  <span>{tool.name}</span>
+                </ToggleGroupItem>
+              );
+            })}
+          </ToggleGroup>
 
           {/* Right Side - Actions */}
           <div className="flex items-center gap-2">
             <Button
               onClick={handleSend}
               disabled={
-                needsFileUpload ? uploadedFiles.length === 0 : !message.trim()
+                disabled ||
+                (requiresFileUpload
+                  ? uploadedFiles.length === 0
+                  : !message.trim())
               }
               size="icon"
-              className={cn(
-                "h-9 w-9 rounded-full transition-all",
-                (needsFileUpload ? uploadedFiles.length > 0 : message.trim())
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "bg-muted text-muted-foreground",
-              )}
+              className="rounded-full"
+              aria-label="发送"
             >
-              <Send className="h-4 w-4" />
+              <Send data-icon="icon" />
             </Button>
           </div>
         </div>

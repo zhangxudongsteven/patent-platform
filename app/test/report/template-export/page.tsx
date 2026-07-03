@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -317,9 +318,11 @@ export default function ReportTemplateExportPage() {
                     <SelectValue placeholder="选择用途前景" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="高">高</SelectItem>
-                    <SelectItem value="低">低</SelectItem>
-                    <SelectItem value="无">无</SelectItem>
+                    <SelectGroup>
+                      <SelectItem value="高">高</SelectItem>
+                      <SelectItem value="低">低</SelectItem>
+                      <SelectItem value="无">无</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -335,10 +338,12 @@ export default function ReportTemplateExportPage() {
                     <SelectValue placeholder="选择授权前景" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="高">高</SelectItem>
-                    <SelectItem value="中">中</SelectItem>
-                    <SelectItem value="低">低</SelectItem>
-                    <SelectItem value="无">无</SelectItem>
+                    <SelectGroup>
+                      <SelectItem value="高">高</SelectItem>
+                      <SelectItem value="中">中</SelectItem>
+                      <SelectItem value="低">低</SelectItem>
+                      <SelectItem value="无">无</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -353,10 +358,12 @@ export default function ReportTemplateExportPage() {
                   <SelectValue placeholder="选择提案等级" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="A">A</SelectItem>
-                  <SelectItem value="B">B</SelectItem>
-                  <SelectItem value="C">C</SelectItem>
-                  <SelectItem value="不通过">不通过</SelectItem>
+                  <SelectGroup>
+                    <SelectItem value="A">A</SelectItem>
+                    <SelectItem value="B">B</SelectItem>
+                    <SelectItem value="C">C</SelectItem>
+                    <SelectItem value="不通过">不通过</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>

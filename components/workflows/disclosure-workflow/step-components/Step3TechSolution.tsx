@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import {
   Plus,
   X,
@@ -14,6 +13,9 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
 import { useDisclosureContext } from "../context";
 import ReactMarkdown from "react-markdown";
 
@@ -39,7 +41,7 @@ export function Step3TechSolution() {
   } = useDisclosureContext();
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div className="rounded-lg border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-foreground">
@@ -65,12 +67,15 @@ export function Step3TechSolution() {
                     : `图片 ${index + 1}`}
                 </span>
                 {contentBlocks.length > 1 && (
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => deleteContentBlock(block.id)}
-                    className="text-muted-foreground hover:text-destructive transition-colors"
+                    className="size-8 text-muted-foreground hover:text-destructive"
                   >
-                    <X className="h-4 w-4" />
-                  </button>
+                    <X data-icon="icon" />
+                  </Button>
                 )}
               </div>
 
@@ -93,12 +98,11 @@ export function Step3TechSolution() {
                       onClick={() => handleOptimizeBlock(block.id)}
                       disabled={optimizingBlockId === block.id}
                     >
-                      <Sparkles
-                        className={cn(
-                          "h-3 w-3",
-                          optimizingBlockId === block.id && "animate-pulse",
-                        )}
-                      />
+                      {optimizingBlockId === block.id ? (
+                        <Spinner data-icon="inline-start" />
+                      ) : (
+                        <Sparkles data-icon="inline-start" />
+                      )}
                       {optimizingBlockId === block.id ? "优化中..." : "AI 优化"}
                     </Button>
                   </div>
@@ -107,7 +111,7 @@ export function Step3TechSolution() {
                 <div className="space-y-4">
                   {block.isDetecting ? (
                     <div className="flex flex-col items-center justify-center py-8">
-                      <div className="mb-2 h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                      <Spinner className="mb-2 size-8" />
                       <p className="text-sm text-muted-foreground">
                         正在检测图片...
                       </p>
@@ -122,31 +126,26 @@ export function Step3TechSolution() {
 
                       {/* 图片检测结果 */}
                       {block.detectionResult && (
-                        <div
-                          className={cn(
-                            "rounded-lg border p-3",
+                        <Alert
+                          variant={
                             block.detectionResult.pass
-                              ? "border-green-500/50 bg-green-500/10"
-                              : "border-red-500/50 bg-red-500/10",
-                          )}
+                              ? "default"
+                              : "destructive"
+                          }
                         >
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
-                              {block.detectionResult.pass ? (
-                                <>
-                                  <div className="h-3 w-3 rounded-full bg-green-500"></div>
-                                  <span className="text-sm font-medium text-green-700 dark:text-green-400">
-                                    图片检测通过
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="h-3 w-3 rounded-full bg-red-500"></div>
-                                  <span className="text-sm font-medium text-red-700 dark:text-red-400">
-                                    图片检测未通过
-                                  </span>
-                                </>
-                              )}
+                              <Badge
+                                variant={
+                                  block.detectionResult.pass
+                                    ? "secondary"
+                                    : "destructive"
+                                }
+                              >
+                                {block.detectionResult.pass
+                                  ? "图片检测通过"
+                                  : "图片检测未通过"}
+                              </Badge>
                             </div>
                             <Button
                               size="sm"
@@ -154,40 +153,28 @@ export function Step3TechSolution() {
                               className="h-6 px-2 text-xs"
                               onClick={() => handleRedetectImage(block.id)}
                             >
-                              <RefreshCw className="h-3 w-3 mr-1" />
+                              <RefreshCw data-icon="inline-start" />
                               重新检测
                             </Button>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <AlertDescription className="text-xs">
                             {block.detectionResult.reason}
-                          </p>
+                          </AlertDescription>
                           <div className="mt-2 flex gap-4 text-xs">
-                            <span
-                              className={cn(
-                                block.detectionResult.isWhiteBackground
-                                  ? "text-green-600"
-                                  : "text-red-600",
-                              )}
-                            >
+                            <Badge variant="outline">
                               背景:{" "}
                               {block.detectionResult.isWhiteBackground
                                 ? "白色"
                                 : "非白色"}
-                            </span>
-                            <span
-                              className={cn(
-                                block.detectionResult.isBlackLines
-                                  ? "text-green-600"
-                                  : "text-red-600",
-                              )}
-                            >
+                            </Badge>
+                            <Badge variant="outline">
                               线条:{" "}
                               {block.detectionResult.isBlackLines
                                 ? "黑色"
                                 : "非黑色"}
-                            </span>
+                            </Badge>
                           </div>
-                        </div>
+                        </Alert>
                       )}
 
                       {/* 图片描述输入框 */}
@@ -227,7 +214,7 @@ export function Step3TechSolution() {
               onClick={() => addContentBlock("text")}
               className="gap-2 bg-transparent"
             >
-              <Plus className="h-4 w-4" />
+              <Plus data-icon="inline-start" />
               添加文本
             </Button>
             <Button
@@ -235,7 +222,7 @@ export function Step3TechSolution() {
               onClick={() => addContentBlock("image")}
               className="gap-2 bg-transparent"
             >
-              <ImageIcon className="h-4 w-4" />
+              <ImageIcon data-icon="inline-start" />
               添加图片
             </Button>
           </div>
@@ -245,9 +232,11 @@ export function Step3TechSolution() {
               disabled={isRewriting}
               className="gap-2"
             >
-              <BookOpen
-                className={cn("h-4 w-4", isRewriting && "animate-pulse")}
-              />
+              {isRewriting ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <BookOpen data-icon="inline-start" />
+              )}
               提取关键词
             </Button>
             <Button
@@ -255,9 +244,11 @@ export function Step3TechSolution() {
               disabled={isRewriting}
               className="gap-2"
             >
-              <Sparkles
-                className={cn("h-4 w-4", isRewriting && "animate-pulse")}
-              />
+              {isRewriting ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <Sparkles data-icon="inline-start" />
+              )}
               {isRewriting ? "AI 处理中..." : "AI 优化全部"}
             </Button>
           </div>
@@ -265,56 +256,44 @@ export function Step3TechSolution() {
       </div>
 
       {aiWarnings.length > 0 && (
-        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="h-5 w-5 rounded-full bg-amber-500 flex items-center justify-center">
-              <span className="text-white text-xs font-bold">!</span>
-            </span>
-            <h3 className="font-medium text-amber-700 dark:text-amber-400">
-              AI 检测到以下问题
-            </h3>
-          </div>
-          <ul className="space-y-1">
-            {aiWarnings.map((warning, index) => (
-              <li
-                key={index}
-                className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400"
-              >
-                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-600 flex-shrink-0" />
-                {warning.message}
-              </li>
-            ))}
-          </ul>
-        </div>
+        <Alert>
+          <AlertTriangle />
+          <AlertTitle>AI 检测到以下问题</AlertTitle>
+          <AlertDescription>
+            <ul className="flex list-disc flex-col gap-1 pl-4">
+              {aiWarnings.map((warning, index) => (
+                <li key={index}>{warning.message}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
       )}
 
       {problemDetectionResult.content || problemDetectionResult.isLoading ? (
-        <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-6">
-          <div className="mb-4 flex items-center justify-between">
+        <Alert variant="destructive" className="p-6">
+          <div className="col-start-2 mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              <h3 className="font-semibold text-red-700 dark:text-red-400">
-                技术方案问题检测
-              </h3>
+              <AlertTriangle />
+              <AlertTitle>技术方案问题检测</AlertTitle>
             </div>
             {problemDetectionResult.isLoading && (
-              <div className="flex items-center gap-2 text-sm text-red-600">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent"></div>
+              <div className="flex items-center gap-2 text-sm">
+                <Spinner />
                 <span>检测中...</span>
               </div>
             )}
           </div>
           {problemDetectionResult.content ? (
-            <div className="prose prose-sm max-w-none dark:prose-invert leading-relaxed">
+            <AlertDescription className="prose prose-sm max-w-none dark:prose-invert leading-relaxed">
               <ReactMarkdown>{problemDetectionResult.content}</ReactMarkdown>
-            </div>
+            </AlertDescription>
           ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-red-600 border-t-transparent mb-2"></div>
+            <AlertDescription className="flex flex-col items-center justify-center py-8">
+              <Spinner className="mb-2 size-8" />
               <p className="text-sm">正在检测技术方案中存在的问题...</p>
-            </div>
+            </AlertDescription>
           )}
-        </div>
+        </Alert>
       ) : null}
 
       <div className="rounded-lg border border-border bg-card p-6">
@@ -329,7 +308,7 @@ export function Step3TechSolution() {
             onClick={addKeyword}
             className="gap-2 text-primary hover:text-primary/80"
           >
-            <Plus className="h-4 w-4" />
+            <Plus data-icon="inline-start" />
             添加关键词
           </Button>
         </div>
@@ -377,12 +356,15 @@ export function Step3TechSolution() {
                       />
                     </td>
                     <td className="p-2 text-center">
-                      <button
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={() => deleteKeyword(index)}
-                        className="text-muted-foreground hover:text-destructive transition-colors"
+                        className="size-8 text-muted-foreground hover:text-destructive"
                       >
-                        <X className="h-4 w-4" />
-                      </button>
+                        <X data-icon="icon" />
+                      </Button>
                     </td>
                   </tr>
                 ))}

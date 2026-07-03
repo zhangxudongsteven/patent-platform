@@ -25,13 +25,17 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
@@ -49,6 +53,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface ReportWorkflowProps {
   fileName: string;
@@ -828,25 +833,24 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="X">X</SelectItem>
-                                      <SelectItem value="Y">Y</SelectItem>
-                                      <SelectItem value="A">A</SelectItem>
+                                      <SelectGroup>
+                                        <SelectItem value="X">X</SelectItem>
+                                        <SelectItem value="Y">Y</SelectItem>
+                                        <SelectItem value="A">A</SelectItem>
+                                      </SelectGroup>
                                     </SelectContent>
                                   </Select>
                                 ) : (
-                                  <span
-                                    className={cn(
-                                      "inline-flex items-center justify-center rounded-lg px-3 py-1 text-sm font-bold",
-                                      patent.category === "X" &&
-                                        "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-                                      patent.category === "Y" &&
-                                        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-                                      patent.category === "A" &&
-                                        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-                                    )}
+                                  <Badge
+                                    variant={
+                                      patent.category === "X"
+                                        ? "destructive"
+                                        : "secondary"
+                                    }
+                                    className="px-3 py-1 text-sm font-bold"
                                   >
                                     {patent.category}
-                                  </span>
+                                  </Badge>
                                 )}
                               </td>
                               <td className="px-4 py-4">
@@ -956,137 +960,140 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
                   请填写以下信息以完成检索报告：
                 </p>
 
-                <div className="space-y-6">
+                <FieldGroup className="gap-6">
                   {/* 提案名称 */}
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-foreground">
-                      提案名称
-                    </label>
-                    <input
+                  <Field>
+                    <FieldLabel htmlFor="proposal-name">提案名称</FieldLabel>
+                    <Input
+                      id="proposal-name"
                       type="text"
                       value={proposalName}
                       onChange={(e) => setProposalName(e.target.value)}
                       placeholder="提案名称（可修改）"
-                      className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground outline-none transition-colors focus:border-primary"
                     />
-                  </div>
+                  </Field>
 
                   {/* 标准适配 和 车型应用 */}
-                  <div className="flex gap-6">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
+                  <div className="flex flex-wrap gap-4">
+                    <Field orientation="horizontal" className="w-auto gap-2">
+                      <Checkbox
+                        id="standard-adaptation"
                         checked={standardAdaptation}
-                        onChange={(e) =>
-                          setStandardAdaptation(e.target.checked)
+                        onCheckedChange={(checked) =>
+                          setStandardAdaptation(Boolean(checked))
                         }
-                        className="h-5 w-5 rounded border-border text-primary focus:ring-2 focus:ring-primary"
                       />
-                      <span className="text-sm font-medium text-foreground">
+                      <FieldLabel htmlFor="standard-adaptation">
                         标准适配
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
+                      </FieldLabel>
+                    </Field>
+                    <Field orientation="horizontal" className="w-auto gap-2">
+                      <Checkbox
+                        id="vehicle-application"
                         checked={vehicleApplication}
-                        onChange={(e) =>
-                          setVehicleApplication(e.target.checked)
+                        onCheckedChange={(checked) =>
+                          setVehicleApplication(Boolean(checked))
                         }
-                        className="h-5 w-5 rounded border-border text-primary focus:ring-2 focus:ring-primary"
                       />
-                      <span className="text-sm font-medium text-foreground">
+                      <FieldLabel htmlFor="vehicle-application">
                         车型应用
-                      </span>
-                    </label>
+                      </FieldLabel>
+                    </Field>
                   </div>
 
                   {/* 用途前景 */}
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-foreground">
-                      用途前景
-                    </label>
-                    <div className="flex gap-3">
+                  <Field>
+                    <FieldLabel>用途前景</FieldLabel>
+                    <ToggleGroup
+                      type="single"
+                      value={usageProspect}
+                      onValueChange={(value) => {
+                        if (value) {
+                          setUsageProspect(value as "高" | "低" | "无");
+                        }
+                      }}
+                      variant="outline"
+                      className="grid w-full grid-cols-3"
+                    >
                       {["高", "低", "无"].map((option) => (
-                        <button
+                        <ToggleGroupItem
                           key={option}
-                          onClick={() => setUsageProspect(option as any)}
-                          className={cn(
-                            "flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all",
-                            usageProspect === option
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border bg-background text-foreground hover:bg-accent",
-                          )}
+                          value={option}
+                          aria-label={`用途前景 ${option}`}
                         >
                           {option}
-                        </button>
+                        </ToggleGroupItem>
                       ))}
-                    </div>
-                  </div>
+                    </ToggleGroup>
+                  </Field>
 
                   {/* 授权前景 */}
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-foreground">
-                      授权前景
-                    </label>
-                    <div className="flex gap-3">
+                  <Field>
+                    <FieldLabel>授权前景</FieldLabel>
+                    <ToggleGroup
+                      type="single"
+                      value={authorizationProspect}
+                      onValueChange={(value) => {
+                        if (value) {
+                          setAuthorizationProspect(
+                            value as "高" | "中" | "低" | "无",
+                          );
+                        }
+                      }}
+                      variant="outline"
+                      className="grid w-full grid-cols-4"
+                    >
                       {["高", "中", "低", "无"].map((option) => (
-                        <button
+                        <ToggleGroupItem
                           key={option}
-                          onClick={() =>
-                            setAuthorizationProspect(option as any)
-                          }
-                          className={cn(
-                            "flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all",
-                            authorizationProspect === option
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border bg-background text-foreground hover:bg-accent",
-                          )}
+                          value={option}
+                          aria-label={`授权前景 ${option}`}
                         >
                           {option}
-                        </button>
+                        </ToggleGroupItem>
                       ))}
-                    </div>
-                  </div>
+                    </ToggleGroup>
+                  </Field>
 
                   {/* 提案等级 */}
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-foreground">
-                      提案等级
-                    </label>
-                    <div className="flex gap-3">
+                  <Field>
+                    <FieldLabel>提案等级</FieldLabel>
+                    <ToggleGroup
+                      type="single"
+                      value={proposalGrade}
+                      onValueChange={(value) => {
+                        if (value) {
+                          setProposalGrade(value as "A" | "B" | "C" | "不通过");
+                        }
+                      }}
+                      variant="outline"
+                      className="grid w-full grid-cols-4"
+                    >
                       {["A", "B", "C", "不通过"].map((option) => (
-                        <button
+                        <ToggleGroupItem
                           key={option}
-                          onClick={() => setProposalGrade(option as any)}
-                          className={cn(
-                            "flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-all",
-                            proposalGrade === option
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border bg-background text-foreground hover:bg-accent",
-                          )}
+                          value={option}
+                          aria-label={`提案等级 ${option}`}
                         >
                           {option}
-                        </button>
+                        </ToggleGroupItem>
                       ))}
-                    </div>
-                  </div>
+                    </ToggleGroup>
+                  </Field>
 
                   {/* 结论 */}
-                  <div>
+                  <Field>
                     <div className="mb-2 flex items-center justify-between">
-                      <label className="text-sm font-medium text-foreground">
-                        结论
-                      </label>
+                      <FieldLabel htmlFor="report-conclusion">结论</FieldLabel>
                       {conclusion.trim() ? (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 gap-2 text-primary hover:text-primary/90"
+                              className="text-primary hover:text-primary/90"
                             >
-                              <Sparkles className="h-4 w-4" />
+                              <Sparkles data-icon="inline-start" />
                               生成结论
                             </Button>
                           </AlertDialogTrigger>
@@ -1112,22 +1119,23 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
                           variant="ghost"
                           size="sm"
                           onClick={handleAutoGenerateConclusion}
-                          className="h-8 gap-2 text-primary hover:text-primary/90"
+                          className="text-primary hover:text-primary/90"
                         >
-                          <Sparkles className="h-4 w-4" />
+                          <Sparkles data-icon="inline-start" />
                           生成结论
                         </Button>
                       )}
                     </div>
-                    <textarea
+                    <Textarea
+                      id="report-conclusion"
                       value={conclusion}
                       onChange={(e) => setConclusion(e.target.value)}
                       placeholder="结论将根据上述信息自动生成，您也可以手动修改..."
                       rows={12}
-                      className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary resize-none"
+                      className="resize-none"
                     />
-                  </div>
-                </div>
+                  </Field>
+                </FieldGroup>
               </div>
             </div>
           )}
@@ -1241,19 +1249,16 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
                                 {patent.differences}
                               </td>
                               <td className="px-4 py-2 text-center">
-                                <span
-                                  className={cn(
-                                    "inline-flex items-center justify-center rounded px-2 py-0.5 text-xs font-bold",
-                                    patent.category === "X" &&
-                                      "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-                                    patent.category === "Y" &&
-                                      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-                                    patent.category === "A" &&
-                                      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-                                  )}
+                                <Badge
+                                  variant={
+                                    patent.category === "X"
+                                      ? "destructive"
+                                      : "secondary"
+                                  }
+                                  className="font-bold"
                                 >
                                   {patent.category}
-                                </span>
+                                </Badge>
                               </td>
                             </tr>
                           ))}

@@ -16,7 +16,20 @@ import {
   MoreHorizontal,
   PanelLeftClose,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ChatItem {
@@ -37,7 +50,7 @@ const initialFolders: FolderData[] = [
   {
     id: "general",
     name: "通用对话",
-    icon: <MessageSquare className="h-4 w-4" />,
+    icon: <MessageSquare />,
     isOpen: true,
     chats: [
       { id: "g1", title: "专利基础知识咨询", date: "今天" },
@@ -48,7 +61,7 @@ const initialFolders: FolderData[] = [
   {
     id: "search-formula",
     name: "专利检索式",
-    icon: <Search className="h-4 w-4" />,
+    icon: <Search />,
     isOpen: false,
     chats: [
       { id: "sf1", title: "新能源电池检索式", date: "今天" },
@@ -58,7 +71,7 @@ const initialFolders: FolderData[] = [
   {
     id: "disclosure",
     name: "专利交底书",
-    icon: <FileText className="h-4 w-4" />,
+    icon: <FileText />,
     isOpen: false,
     chats: [
       { id: "d1", title: "智能温控系统交底书", date: "昨天" },
@@ -68,21 +81,21 @@ const initialFolders: FolderData[] = [
   {
     id: "report",
     name: "专利检索报告",
-    icon: <FileText className="h-4 w-4" />,
+    icon: <FileText />,
     isOpen: false,
     chats: [{ id: "r1", title: "无线充电技术检索报告", date: "3天前" }],
   },
   {
     id: "patent-search",
     name: "专利检索",
-    icon: <Search className="h-4 w-4" />,
+    icon: <Search />,
     isOpen: false,
     chats: [{ id: "ps1", title: "量子计算专利检索", date: "今天" }],
   },
   {
     id: "analysis",
     name: "专利解析",
-    icon: <FileText className="h-4 w-4" />,
+    icon: <FileText />,
     isOpen: false,
     chats: [
       { id: "a1", title: "CN202310001234解析", date: "今天" },
@@ -104,6 +117,10 @@ export function ChatSidebar({ onNewChat }: { onNewChat?: () => void }) {
     );
   };
 
+  const showNotImplemented = () => {
+    toast.info("功能未实现");
+  };
+
   if (isCollapsed) {
     return (
       <div className="flex h-full w-14 flex-col border-r border-border bg-sidebar">
@@ -112,9 +129,9 @@ export function ChatSidebar({ onNewChat }: { onNewChat?: () => void }) {
             variant="ghost"
             size="icon"
             onClick={() => setIsCollapsed(false)}
-            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+            className="size-8 text-sidebar-foreground hover:bg-sidebar-accent"
           >
-            <PanelLeftClose className="h-4 w-4 rotate-180" />
+            <PanelLeftClose data-icon="icon" className="rotate-180" />
           </Button>
         </div>
         <div className="flex flex-col items-center gap-2 p-2">
@@ -124,7 +141,7 @@ export function ChatSidebar({ onNewChat }: { onNewChat?: () => void }) {
             onClick={onNewChat}
             className="h-9 w-9 text-sidebar-foreground hover:bg-sidebar-accent"
           >
-            <Plus className="h-4 w-4" />
+            <Plus data-icon="icon" />
           </Button>
           {folders.map((folder) => (
             <Button
@@ -154,8 +171,8 @@ export function ChatSidebar({ onNewChat }: { onNewChat?: () => void }) {
       {/* Header */}
       <div className="flex h-14 items-center justify-between border-b border-border px-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <FileText className="h-4 w-4 text-primary-foreground" />
+          <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
+            <FileText className="text-primary-foreground" />
           </div>
           <span className="font-semibold text-sidebar-foreground">
             专利助手
@@ -165,9 +182,9 @@ export function ChatSidebar({ onNewChat }: { onNewChat?: () => void }) {
           variant="ghost"
           size="icon"
           onClick={() => setIsCollapsed(true)}
-          className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+          className="size-8 text-sidebar-foreground hover:bg-sidebar-accent"
         >
-          <PanelLeftClose className="h-4 w-4" />
+          <PanelLeftClose data-icon="icon" />
         </Button>
       </div>
 
@@ -177,21 +194,23 @@ export function ChatSidebar({ onNewChat }: { onNewChat?: () => void }) {
           className="w-full justify-start gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
           onClick={onNewChat}
         >
-          <Plus className="h-4 w-4" />
+          <Plus data-icon="inline-start" />
           新建对话
         </Button>
       </div>
 
       {/* Search */}
       <div className="px-3 pb-2">
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-sidebar-accent/50 px-3 py-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <input
+        <InputGroup className="border-border bg-sidebar-accent/50">
+          <InputGroupAddon>
+            <Search />
+          </InputGroupAddon>
+          <InputGroupInput
             type="text"
             placeholder="搜索对话..."
-            className="flex-1 bg-transparent text-sm text-sidebar-foreground placeholder:text-muted-foreground focus:outline-none"
+            className="text-sidebar-foreground placeholder:text-muted-foreground"
           />
-        </div>
+        </InputGroup>
       </div>
 
       {/* Folders and Chats */}
@@ -200,19 +219,21 @@ export function ChatSidebar({ onNewChat }: { onNewChat?: () => void }) {
           {folders.map((folder) => (
             <div key={folder.id}>
               {/* Folder Header */}
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => toggleFolder(folder.id)}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent"
+                className="h-auto w-full justify-start gap-2 px-2 py-2 text-sidebar-foreground hover:bg-sidebar-accent"
               >
                 {folder.isOpen ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  <ChevronDown data-icon="inline-start" />
                 ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <ChevronRight data-icon="inline-start" />
                 )}
                 {folder.isOpen ? (
-                  <FolderOpen className="h-4 w-4 text-primary" />
+                  <FolderOpen className="text-primary" />
                 ) : (
-                  <FolderClosed className="h-4 w-4 text-primary" />
+                  <FolderClosed className="text-primary" />
                 )}
                 <span className="flex-1 text-left font-medium">
                   {folder.name}
@@ -220,7 +241,7 @@ export function ChatSidebar({ onNewChat }: { onNewChat?: () => void }) {
                 <span className="text-xs text-muted-foreground">
                   {folder.chats.length}
                 </span>
-              </button>
+              </Button>
 
               {/* Chat Items */}
               {folder.isOpen && (
@@ -228,27 +249,54 @@ export function ChatSidebar({ onNewChat }: { onNewChat?: () => void }) {
                   {folder.chats.map((chat) => (
                     <div
                       key={chat.id}
-                      onClick={() => setActiveChat(chat.id)}
                       className={cn(
-                        "group flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors cursor-pointer",
+                        "group flex w-full items-center gap-1 rounded-lg pr-1 text-sm transition-colors",
                         activeChat === chat.id
                           ? "bg-sidebar-accent text-sidebar-foreground"
                           : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                       )}
                     >
-                      <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-                      <span className="flex-1 truncate text-left">
-                        {chat.title}
-                      </span>
-                      <div
-                        className="opacity-0 group-hover:opacity-100 hover:bg-background/20 rounded p-0.5"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // TODO: Implement menu actions
-                        }}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setActiveChat(chat.id)}
+                        className="h-auto min-w-0 flex-1 justify-start gap-2 px-2 py-1.5 text-inherit hover:bg-transparent hover:text-inherit"
+                        aria-current={
+                          activeChat === chat.id ? "page" : undefined
+                        }
                       >
-                        <MoreHorizontal className="h-3.5 w-3.5" />
-                      </div>
+                        <MessageSquare data-icon="inline-start" />
+                        <span className="truncate text-left">{chat.title}</span>
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 opacity-0 hover:bg-background/20 group-hover:opacity-100 focus-visible:opacity-100"
+                            aria-label={`${chat.title} 更多操作`}
+                          >
+                            <MoreHorizontal data-icon="icon" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuGroup>
+                            <DropdownMenuItem onSelect={showNotImplemented}>
+                              重命名
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={showNotImplemented}>
+                              移动到文件夹
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={showNotImplemented}
+                            >
+                              删除
+                            </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   ))}
                 </div>
@@ -261,7 +309,7 @@ export function ChatSidebar({ onNewChat }: { onNewChat?: () => void }) {
       {/* User Section */}
       <div className="border-t border-border p-3">
         <div className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-sidebar-accent">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
             <span className="text-sm font-medium">用</span>
           </div>
           <div className="flex-1 overflow-hidden">
@@ -269,7 +317,7 @@ export function ChatSidebar({ onNewChat }: { onNewChat?: () => void }) {
               我的空间
             </p>
           </div>
-          <FolderOpen className="h-4 w-4 text-muted-foreground" />
+          <FolderOpen className="text-muted-foreground" />
         </div>
       </div>
     </div>

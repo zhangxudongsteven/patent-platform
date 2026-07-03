@@ -219,12 +219,12 @@ export default function OSSTestPage() {
             <Button type="submit" disabled={!selectedFile || uploading}>
               {uploading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 data-icon="inline-start" className="animate-spin" />
                   上传中...
                 </>
               ) : (
                 <>
-                  <Upload className="w-4 h-4 mr-2" />
+                  <Upload data-icon="inline-start" />
                   上传
                 </>
               )}
@@ -247,7 +247,8 @@ export default function OSSTestPage() {
               disabled={loading}
             >
               <RefreshCw
-                className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+                data-icon="inline-start"
+                className={loading ? "animate-spin" : undefined}
               />
               刷新
             </Button>
@@ -285,7 +286,7 @@ export default function OSSTestPage() {
                       className="col-span-6 sm:col-span-5 font-medium truncate flex items-center gap-2"
                       title={file.Key}
                     >
-                      <FileIcon className="w-4 h-4 text-blue-500 shrink-0" />
+                      <FileIcon className="text-primary shrink-0" />
                       <span className="truncate">{file.Key}</span>
                     </div>
                     <div className="col-span-3 sm:col-span-2 text-right text-muted-foreground font-mono text-xs">
@@ -303,7 +304,7 @@ export default function OSSTestPage() {
                         title="查看元数据"
                         onClick={() => handleViewMeta(file)}
                       >
-                        <Info className="w-4 h-4 text-gray-500" />
+                        <Info data-icon="icon" />
                       </Button>
                       {file.Url && (
                         <Button
@@ -317,18 +318,18 @@ export default function OSSTestPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            <ExternalLink className="w-4 h-4" />
+                            <ExternalLink data-icon="icon" />
                           </a>
                         </Button>
                       )}
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                         onClick={() => handleDeleteClick(file)}
                         title="删除"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 data-icon="icon" />
                       </Button>
                     </div>
                   </div>
@@ -358,7 +359,7 @@ export default function OSSTestPage() {
             <AlertDialogCancel>取消</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-red-500 hover:bg-red-600 focus:ring-red-500"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               删除
             </AlertDialogAction>

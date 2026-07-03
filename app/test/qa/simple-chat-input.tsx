@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 interface SimpleChatInputProps {
   onSend?: (message: string) => void;
@@ -13,14 +14,14 @@ export function SimpleChatInput({ onSend, disabled }: SimpleChatInputProps) {
   const [message, setMessage] = React.useState("");
 
   const handleSend = () => {
-    if (message.trim()) {
+    if (!disabled && message.trim()) {
       onSend?.(message);
       setMessage("");
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleSend();
     }
@@ -29,12 +30,13 @@ export function SimpleChatInput({ onSend, disabled }: SimpleChatInputProps) {
   return (
     <div className="w-full max-w-3xl mx-auto px-4 pb-6">
       <div className="relative rounded-2xl border border-border bg-card shadow-lg p-2 flex items-end gap-2">
-        <textarea
+        <Textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="输入您的问题..."
-          className="flex-1 resize-none bg-transparent px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[50px] max-h-[200px]"
+          placeholder="输入您的问题…"
+          name="qa-question"
+          className="max-h-[200px] min-h-[50px] flex-1 resize-none border-0 bg-transparent px-4 py-3 shadow-none focus-visible:ring-0"
           rows={1}
           disabled={disabled}
         />
@@ -42,9 +44,9 @@ export function SimpleChatInput({ onSend, disabled }: SimpleChatInputProps) {
           onClick={handleSend}
           disabled={disabled || !message.trim()}
           size="icon"
-          className="mb-1 h-9 w-9 shrink-0 rounded-full"
+          className="mb-1 shrink-0 rounded-full"
         >
-          <Send className="h-4 w-4" />
+          <Send data-icon="icon" />
           <span className="sr-only">发送</span>
         </Button>
       </div>
