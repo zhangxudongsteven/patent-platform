@@ -18,6 +18,13 @@ import type {
   ChatToolId,
 } from "@/components/chat/types";
 
+type ActiveWorkflow =
+  | { type: "keyword-search"; query: string }
+  | { type: "search-formula"; fileName: string }
+  | { type: "report"; fileName: string }
+  | { type: "disclosure"; fileName: string }
+  | { type: "analysis"; fileNames: string[] };
+
 // 模拟 AI 回复
 const getAIResponse = (userMessage: string, tool?: ChatToolId): string => {
   if (tool === "patent-search") {
@@ -42,14 +49,8 @@ const getAIResponse = (userMessage: string, tool?: ChatToolId): string => {
 export default function Home() {
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showSearchFormula, setShowSearchFormula] = useState(false);
-  const [showReport, setShowReport] = useState(false);
-  const [showDisclosure, setShowDisclosure] = useState(false);
-  const [showAnalysis, setShowAnalysis] = useState(false);
-  const [showKeywordSearch, setShowKeywordSearch] = useState(false);
-  const [uploadedFileNames, setUploadedFileNames] = useState<string[]>([]);
-  const [uploadedFileName, setUploadedFileName] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [activeWorkflow, setActiveWorkflow] =
+    useState<ActiveWorkflow | null>(null);
 
   const handleChatSubmit = async (payload: ChatSubmit) => {
     if (isLoading) return;
@@ -59,31 +60,42 @@ export default function Home() {
       const firstFileName = fileNames[0] || "";
 
       if (payload.toolId === "patent-search") {
-        setSearchQuery(payload.message || "");
-        setShowKeywordSearch(true);
+        setActiveWorkflow({
+          type: "keyword-search",
+          query: payload.message || "",
+        });
         return;
       }
 
       if (payload.toolId === "search-formula") {
-        setUploadedFileName(firstFileName);
-        setShowSearchFormula(true);
+        setActiveWorkflow({
+          type: "search-formula",
+          fileName: firstFileName,
+        });
         return;
       }
 
       if (payload.toolId === "report") {
-        setUploadedFileName(firstFileName);
-        setShowReport(true);
+        setActiveWorkflow({
+          type: "report",
+          fileName: firstFileName,
+        });
         return;
       }
 
       if (payload.toolId === "disclosure") {
-        setShowDisclosure(true);
+        setActiveWorkflow({
+          type: "disclosure",
+          fileName: firstFileName,
+        });
         return;
       }
 
       if (payload.toolId === "analysis") {
-        setUploadedFileNames(fileNames);
-        setShowAnalysis(true);
+        setActiveWorkflow({
+          type: "analysis",
+          fileNames,
+        });
         return;
       }
     }
@@ -176,14 +188,7 @@ export default function Home() {
   };
 
   const handleBackFromWorkflow = () => {
-    setShowSearchFormula(false);
-    setShowReport(false);
-    setShowDisclosure(false);
-    setShowAnalysis(false);
-    setShowKeywordSearch(false);
-    setUploadedFileName("");
-    setUploadedFileNames([]);
-    setSearchQuery("");
+    setActiveWorkflow(null);
   };
 
   const handleNewChat = () => {
@@ -193,13 +198,13 @@ export default function Home() {
   };
 
   // 如果正在进行专利检索式工作流，显示专用页面
-  if (showSearchFormula) {
+  if (activeWorkflow?.type === "search-formula") {
     return (
       <div className="flex h-screen bg-background">
         <ChatSidebar />
         <div className="flex flex-1 flex-col">
           <SearchFormulaWorkflow
-            fileName={uploadedFileName}
+            fileName={activeWorkflow.fileName}
             onBack={handleBackFromWorkflow}
           />
         </div>
@@ -208,13 +213,13 @@ export default function Home() {
   }
 
   // 如果正在进行专利检索报告工作流，显示专用页面
-  if (showReport) {
+  if (activeWorkflow?.type === "report") {
     return (
       <div className="flex h-screen bg-background">
         <ChatSidebar />
         <div className="flex flex-1 flex-col">
           <ReportWorkflow
-            fileName={uploadedFileName}
+            fileName={activeWorkflow.fileName}
             onBack={handleBackFromWorkflow}
           />
         </div>
@@ -223,13 +228,13 @@ export default function Home() {
   }
 
   // 如果正在进行专利交底书工作流，显示专用页面
-  if (showDisclosure) {
+  if (activeWorkflow?.type === "disclosure") {
     return (
       <div className="flex h-screen bg-background">
         <ChatSidebar />
         <div className="flex flex-1 flex-col">
           <DisclosureWorkflow
-            fileName={uploadedFileName}
+            fileName={activeWorkflow.fileName}
             onBack={handleBackFromWorkflow}
           />
         </div>
@@ -238,13 +243,13 @@ export default function Home() {
   }
 
   // 如果正在进行专利解析工作流，显示专用页面
-  if (showAnalysis) {
+  if (activeWorkflow?.type === "analysis") {
     return (
       <div className="flex h-screen bg-background">
         <ChatSidebar />
         <div className="flex flex-1 flex-col">
           <AnalysisWorkflow
-            fileNames={uploadedFileNames}
+            fileNames={activeWorkflow.fileNames}
             onBack={handleBackFromWorkflow}
           />
         </div>
@@ -253,13 +258,13 @@ export default function Home() {
   }
 
   // 如果正在进行关键词搜索工作流，显示专用页面
-  if (showKeywordSearch) {
+  if (activeWorkflow?.type === "keyword-search") {
     return (
       <div className="flex h-screen bg-background">
         <ChatSidebar />
         <div className="flex flex-1 flex-col">
           <KeywordSearchWorkflow
-            initialQuery={searchQuery}
+            initialQuery={activeWorkflow.query}
             onBack={handleBackFromWorkflow}
           />
         </div>

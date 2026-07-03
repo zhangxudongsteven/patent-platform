@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 为侧边栏对话更多操作补充“功能未实现”通知反馈，避免空操作误导。
 - 拆分并补充 agent 参考文档与 UI 技能策略说明，保留 `AGENTS.md` 的核心规则入口。
 - 将首页聊天与工作流跳转改为结构化提交契约，移除基于上传文案的内部分流。
+- 将首页工作流状态收敛为单个结构化 `activeWorkflow` 对象，降低工作流切换和重置状态分散度。
+- 补齐 Next.js 16 的 ESLint CLI 工具链，新增 flat config 并保留既有历史 lint 问题为 warning。
 
 ## [0.1.1] - 2026-07-03
 
