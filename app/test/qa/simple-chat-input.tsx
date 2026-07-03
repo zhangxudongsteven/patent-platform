@@ -14,14 +14,14 @@ export function SimpleChatInput({ onSend, disabled }: SimpleChatInputProps) {
   const [message, setMessage] = React.useState("");
 
   const handleSend = () => {
-    if (message.trim()) {
+    if (!disabled && message.trim()) {
       onSend?.(message);
       setMessage("");
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleSend();
     }

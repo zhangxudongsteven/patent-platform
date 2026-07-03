@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { ChatSidebar } from "@/components/chat-sidebar";
 import { ChatInput } from "@/components/chat-input";
 import { ChatThread } from "@/components/chat/chat-thread";
@@ -9,14 +11,8 @@ import { ReportWorkflow } from "@/components/workflows/report-workflow";
 import { DisclosureWorkflow } from "@/components/workflows/disclosure-workflow";
 import { AnalysisWorkflow } from "@/components/workflows/analysis-workflow";
 import { KeywordSearchWorkflow } from "@/components/workflows/keyword-search-workflow";
-import { streamQAAnswer } from "@/lib/service/chat";
 import { toast } from "sonner";
-import { toolNames } from "@/components/chat/tool-config";
-import type {
-  ChatMessageData,
-  ChatSubmit,
-  ChatToolId,
-} from "@/components/chat/types";
+import type { ChatMessageData, ChatSubmit } from "@/components/chat/types";
 
 type ActiveWorkflow =
   | { type: "keyword-search"; query: string }
@@ -25,35 +21,61 @@ type ActiveWorkflow =
   | { type: "disclosure"; fileName: string }
   | { type: "analysis"; fileNames: string[] };
 
-// 模拟 AI 回复
-const getAIResponse = (userMessage: string, tool?: ChatToolId): string => {
-  if (tool === "patent-search") {
-    return "我将为您进行全库专利检索。支持的检索方式包括：\n\n1. 关键词检索\n2. 申请人/发明人检索\n3. 分类号检索\n4. 语义检索\n\n请输入您想要检索的内容，例如“人工智能 图像识别”或“华为技术有限公司”。";
-  }
-  if (tool === "search-formula") {
-    return "根据您的需求，我为您生成以下专利检索式：\n\n(发明名称 OR 摘要) AND (技术特征 OR 关键词) AND (IPC分类号)\n\n这个检索式可以帮助您在专利数据库中精准定位相关技术。建议在使用时根据具体情况调整关键词和分类号。";
-  }
-  if (tool === "disclosure") {
-    return "我将帮助您撰写专利交底书。专利交底书通常包含以下部分：\n\n1. 技术领域\n2. 背景技术\n3. 发明内容\n4. 附图说明\n5. 具体实施方式\n\n请提供您的技术方案详细信息，我将协助您完成各部分内容的撰写。";
-  }
-  if (tool === "report") {
-    return "我将为您生成专利检索报告。报告将包括：\n\n1. 检索策略说明\n2. 相关专利列表\n3. 技术对比分析\n4. 新颖性评估\n5. 专利布局建议\n\n请提供您需要检索的技术主题和关键词。";
-  }
-  if (tool === "analysis") {
-    return "我将为您深度解析专利文献。分析内容包括：\n\n1. 技术问题\n2. 技术手段\n3. 技术效果\n\n请提供需要分析的专利号或上传专利文件。";
+function getTextFromUIMessage(message: UIMessage) {
+  return message.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("");
+}
+
+function toChatMessageData(message: UIMessage): ChatMessageData | null {
+  if (message.role !== "user" && message.role !== "assistant") {
+    return null;
   }
 
-  return "您好！我是专利智能助手，专注于为您提供专利相关的专业服务。我可以帮助您：\n\n• 生成精准的专利检索式\n• 撰写规范的专利交底书\n• 制作详细的专利检索报告\n• 深度解析专利技术方案\n\n请告诉我您需要什么帮助，或选择底部的专业工具开始使用。";
-};
+  const content = getTextFromUIMessage(message);
+
+  if (!content && message.role !== "assistant") {
+    return null;
+  }
+
+  return {
+    id: message.id,
+    role: message.role,
+    content,
+    timestamp: new Date(),
+  };
+}
 
 export default function Home() {
-  const [messages, setMessages] = useState<ChatMessageData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeWorkflow, setActiveWorkflow] =
-    useState<ActiveWorkflow | null>(null);
+  const [activeWorkflow, setActiveWorkflow] = useState<ActiveWorkflow | null>(
+    null,
+  );
+  const transport = useMemo(
+    () => new DefaultChatTransport({ api: "/api/chat" }),
+    [],
+  );
+  const {
+    messages: uiMessages,
+    sendMessage,
+    setMessages,
+    status,
+  } = useChat({
+    transport,
+    onError: (error) => {
+      console.error("对话出错:", error);
+      toast.error("发生错误，请稍后重试");
+    },
+  });
+  const isLoading = status === "submitted" || status === "streaming";
+  const messages = useMemo(
+    () =>
+      uiMessages.map(toChatMessageData).filter((message) => message !== null),
+    [uiMessages],
+  );
 
   const handleChatSubmit = async (payload: ChatSubmit) => {
-    if (isLoading) return;
+    if (isLoading) return false;
 
     if (payload.type === "workflow") {
       const fileNames = payload.files?.map((file) => file.name) ?? [];
@@ -64,7 +86,7 @@ export default function Home() {
           type: "keyword-search",
           query: payload.message || "",
         });
-        return;
+        return true;
       }
 
       if (payload.toolId === "search-formula") {
@@ -72,7 +94,7 @@ export default function Home() {
           type: "search-formula",
           fileName: firstFileName,
         });
-        return;
+        return true;
       }
 
       if (payload.toolId === "report") {
@@ -80,7 +102,7 @@ export default function Home() {
           type: "report",
           fileName: firstFileName,
         });
-        return;
+        return true;
       }
 
       if (payload.toolId === "disclosure") {
@@ -88,7 +110,7 @@ export default function Home() {
           type: "disclosure",
           fileName: firstFileName,
         });
-        return;
+        return true;
       }
 
       if (payload.toolId === "analysis") {
@@ -96,95 +118,22 @@ export default function Home() {
           type: "analysis",
           fileNames,
         });
-        return;
+        return true;
       }
     }
 
     if (payload.type !== "chat") {
-      return;
+      return false;
     }
 
     const content = payload.message;
-    const tool = payload.toolId;
 
     if (!content.trim()) {
-      return;
+      return false;
     }
 
-    // 添加用户消息
-    const userMessage: ChatMessageData = {
-      id: Date.now().toString(),
-      role: "user",
-      content,
-      timestamp: new Date(),
-      tool: tool ? toolNames[tool] : undefined,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-
-    // 如果有具体的 tool（但没有触发工作流），使用静态引导回复
-    if (tool) {
-      setTimeout(() => {
-        const aiMessage: ChatMessageData = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: getAIResponse(content, tool),
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, aiMessage]);
-      }, 500);
-      return;
-    }
-
-    // 默认对话模式：调用 Server Action
-    setIsLoading(true);
-    try {
-      // 准备历史记录 (去除当前这条，因为 Server Action 签名是 question + history)
-      // 注意：这里 history 应该包含之前的 user 和 assistant 消息
-      const history = messages.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      }));
-
-      const stream = await streamQAAnswer(content, history);
-
-      const assistantMsgId = (Date.now() + 1).toString();
-      let assistantContent = "";
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantMsgId,
-          role: "assistant",
-          content: "",
-          timestamp: new Date(),
-        },
-      ]);
-
-      for await (const chunk of stream) {
-        if (chunk) {
-          assistantContent += chunk;
-          setMessages((prev) => {
-            const newMessages = [...prev];
-            const lastIndex = newMessages.findIndex(
-              (m) => m.id === assistantMsgId,
-            );
-            if (lastIndex !== -1) {
-              newMessages[lastIndex] = {
-                ...newMessages[lastIndex],
-                content: assistantContent,
-              };
-            }
-            return newMessages;
-          });
-        }
-      }
-    } catch (error) {
-      console.error("对话出错:", error);
-      toast.error("发生错误，请稍后重试");
-    } finally {
-      setIsLoading(false);
-    }
+    await sendMessage({ text: content.trim() });
+    return true;
   };
 
   const handleBackFromWorkflow = () => {
@@ -288,7 +237,7 @@ export default function Home() {
 
           {/* Chat Input - Fixed at bottom */}
           <div className="bg-background">
-            <ChatInput onSubmit={handleChatSubmit} />
+            <ChatInput onSubmit={handleChatSubmit} disabled={isLoading} />
           </div>
         </main>
 

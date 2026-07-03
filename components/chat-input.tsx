@@ -11,6 +11,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   chatTools,
   formatUploadedFileMessage,
+  getToolConfig,
   getPlaceholderText,
   getUploadConfig,
   getValidFiles,
@@ -18,12 +19,14 @@ import {
   toUploadedFileMeta,
 } from "@/components/chat/tool-config";
 import type { ChatSubmit, ChatToolId } from "@/components/chat/types";
+import { toast } from "sonner";
 
 interface ChatInputProps {
-  onSubmit?: (payload: ChatSubmit) => void;
+  onSubmit?: (payload: ChatSubmit) => boolean | Promise<boolean | void> | void;
+  disabled?: boolean;
 }
 
-export function ChatInput({ onSubmit }: ChatInputProps) {
+export function ChatInput({ onSubmit, disabled = false }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [selectedTool, setSelectedTool] = useState<ChatToolId | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -47,17 +50,35 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
     setIsDragging(false);
   };
 
+  const showInvalidFileToast = (files: File[], validFiles: File[]) => {
+    const invalidFiles = files.filter((file) => !validFiles.includes(file));
+
+    if (invalidFiles.length === 0) {
+      return;
+    }
+
+    const toolName = getToolConfig(selectedTool)?.name ?? "当前工具";
+    const formatText = uploadConfig?.formatText ?? "请上传支持的文件格式";
+    toast.error(
+      `${toolName}不支持：${invalidFiles.map((file) => file.name).join("、")}`,
+      {
+        description: formatText,
+      },
+    );
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
 
-    if (!requiresFileUpload) return;
+    if (disabled || !requiresFileUpload) return;
 
     const files = Array.from(e.dataTransfer.files);
     if (files.length === 0) return;
 
     const validFiles = getValidFiles(files, selectedTool);
+    showInvalidFileToast(files, validFiles);
 
     if (validFiles.length > 0) {
       if (uploadConfig?.multiple) {
@@ -68,57 +89,69 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
     }
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
+    if (disabled) return;
+
     // 专利交底书直接进入工作流
     if (selectedTool === "disclosure") {
-      onSubmit?.({
+      const accepted = await onSubmit?.({
         type: "workflow",
         toolId: selectedTool,
         message: "开始专利交底书流程",
       });
-      setSelectedTool(null);
+      if (accepted !== false) {
+        setSelectedTool(null);
+      }
       return;
     }
 
     if (requiresFileUpload && selectedTool && uploadedFiles.length > 0) {
       const files = uploadedFiles.map(toUploadedFileMeta);
-      onSubmit?.({
+      const accepted = await onSubmit?.({
         type: "workflow",
         toolId: selectedTool,
         files,
         message: formatUploadedFileMessage(files),
       });
-      setUploadedFiles([]);
+      if (accepted !== false) {
+        setUploadedFiles([]);
+      }
     } else if (!requiresFileUpload && message.trim()) {
       const trimmedMessage = message.trim();
+      let accepted: boolean | void | undefined;
 
       if (selectedTool === "patent-search") {
-        onSubmit?.({
+        accepted = await onSubmit?.({
           type: "workflow",
           toolId: selectedTool,
           message: trimmedMessage,
         });
       } else {
-        onSubmit?.({
+        accepted = await onSubmit?.({
           type: "chat",
           message: trimmedMessage,
           toolId: selectedTool || undefined,
         });
       }
 
-      setMessage("");
+      if (accepted !== false) {
+        setMessage("");
+      }
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
-      handleSend();
+      void handleSend();
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = getValidFiles(Array.from(e.target.files || []), selectedTool);
+    const selectedFiles = Array.from(e.target.files || []);
+    const files = getValidFiles(selectedFiles, selectedTool);
+    showInvalidFileToast(selectedFiles, files);
+
     if (files.length > 0) {
       if (uploadConfig?.multiple) {
         setUploadedFiles((prev) => [...prev, ...files]);
@@ -133,14 +166,18 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
   };
 
   const handleUploadClick = () => {
+    if (disabled) return;
     fileInputRef.current?.click();
   };
 
   const handleRemoveFile = (index: number) => {
+    if (disabled) return;
     setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleToolChange = (value: string) => {
+  const handleToolChange = async (value: string) => {
+    if (disabled) return;
+
     if (!value) {
       setSelectedTool(null);
       setUploadedFiles([]);
@@ -148,13 +185,15 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
     }
 
     if (value === "disclosure") {
-      onSubmit?.({
+      const accepted = await onSubmit?.({
         type: "workflow",
         toolId: "disclosure",
         message: "开始专利交底书流程",
       });
-      setSelectedTool(null);
-      setUploadedFiles([]);
+      if (accepted !== false) {
+        setSelectedTool(null);
+        setUploadedFiles([]);
+      }
       return;
     }
 
@@ -174,6 +213,7 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
           onChange={handleFileChange}
           className="hidden"
           multiple={uploadConfig?.multiple}
+          disabled={disabled}
           aria-label="上传文件"
         />
 
@@ -210,6 +250,7 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleRemoveFile(index)}
+                      disabled={disabled}
                       className="size-8 text-muted-foreground hover:text-foreground"
                       aria-label={`移除文件 ${file.name}`}
                     >
@@ -222,6 +263,7 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
                     type="button"
                     variant="outline"
                     onClick={handleUploadClick}
+                    disabled={disabled}
                     className="h-auto w-full border-dashed py-2 text-muted-foreground"
                   >
                     <Upload data-icon="inline-start" />
@@ -234,6 +276,7 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
                 type="button"
                 variant="outline"
                 onClick={handleUploadClick}
+                disabled={disabled}
                 className={cn(
                   "h-auto w-full justify-center gap-3 border-dashed px-4 py-8 text-left",
                   isDragging && "border-primary bg-primary/10",
@@ -261,6 +304,7 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
               name="chat-message"
               className="max-h-[200px] min-h-[60px] resize-none border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0"
               rows={2}
+              disabled={disabled}
             />
           </div>
         )}
@@ -273,6 +317,7 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
             value={selectedTool ?? ""}
             onValueChange={handleToolChange}
             className="flex-wrap justify-start"
+            disabled={disabled}
           >
             {chatTools.map((tool) => {
               const ToolIcon = tool.icon;
@@ -297,9 +342,10 @@ export function ChatInput({ onSubmit }: ChatInputProps) {
             <Button
               onClick={handleSend}
               disabled={
-                requiresFileUpload
+                disabled ||
+                (requiresFileUpload
                   ? uploadedFiles.length === 0
-                  : !message.trim()
+                  : !message.trim())
               }
               size="icon"
               className="rounded-full"

@@ -1,17 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { Button } from "@/components/ui/button";
 import { SimpleChatInput } from "./simple-chat-input";
 import { ChatThread } from "@/components/chat/chat-thread";
 import { Eraser, FileSearch } from "lucide-react";
 import { toast } from "sonner";
-import { streamQAAnswer } from "@/lib/service/chat";
 import type { ChatMessageData } from "@/components/chat/types";
 
+function getTextFromUIMessage(message: UIMessage) {
+  return message.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("");
+}
+
+function toChatMessageData(message: UIMessage): ChatMessageData | null {
+  if (message.role !== "user" && message.role !== "assistant") {
+    return null;
+  }
+
+  const content = getTextFromUIMessage(message);
+
+  if (!content && message.role !== "assistant") {
+    return null;
+  }
+
+  return {
+    id: message.id,
+    role: message.role,
+    content,
+    timestamp: new Date(),
+  };
+}
+
 export default function QAPage() {
-  const [messages, setMessages] = useState<ChatMessageData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const transport = useMemo(
+    () => new DefaultChatTransport({ api: "/api/chat" }),
+    [],
+  );
+  const {
+    messages: uiMessages,
+    sendMessage,
+    setMessages,
+    status,
+  } = useChat({
+    transport,
+    onError: (error) => {
+      console.error("对话出错:", error);
+      toast.error("发生错误，请稍后重试");
+    },
+  });
+  const isLoading = status === "submitted" || status === "streaming";
+  const messages = useMemo(
+    () =>
+      uiMessages.map(toChatMessageData).filter((message) => message !== null),
+    [uiMessages],
+  );
 
   // 清空对话
   const handleClearChat = () => {
@@ -22,66 +69,11 @@ export default function QAPage() {
   const handleSend = async (content: string) => {
     if (isLoading) return;
 
-    const userMsgId = Date.now().toString();
-    const userMsg: ChatMessageData = {
-      id: userMsgId,
-      role: "user",
-      content,
-      timestamp: new Date(),
-    };
-
-    // Optimistically add user message
-    setMessages((prev) => [...prev, userMsg]);
-    setIsLoading(true);
-
     try {
-      // Prepare history (excluding current message)
-      const history = messages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-
-      // Call Server Action
-      const stream = await streamQAAnswer(content, history);
-
-      // Create placeholder for assistant message
-      const assistantMsgId = (Date.now() + 1).toString();
-      let assistantContent = "";
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantMsgId,
-          role: "assistant",
-          content: "",
-          timestamp: new Date(),
-        },
-      ]);
-
-      // Iterate over the stream
-      for await (const chunk of stream) {
-        if (chunk) {
-          assistantContent += chunk;
-          setMessages((prev) => {
-            const newMessages = [...prev];
-            const lastIndex = newMessages.findIndex(
-              (m) => m.id === assistantMsgId,
-            );
-            if (lastIndex !== -1) {
-              newMessages[lastIndex] = {
-                ...newMessages[lastIndex],
-                content: assistantContent,
-              };
-            }
-            return newMessages;
-          });
-        }
-      }
+      await sendMessage({ text: content });
     } catch (error) {
       console.error("对话出错:", error);
       toast.error("发生错误，请稍后重试");
-    } finally {
-      setIsLoading(false);
     }
   };
 
