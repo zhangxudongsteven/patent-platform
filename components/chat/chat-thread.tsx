@@ -35,6 +35,10 @@ export function ChatThread({
   emptyState,
 }: ChatThreadProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const visibleMessages = messages.filter(
+    (message) => message.content.trim().length > 0,
+  );
+  const lastVisibleMessage = visibleMessages[visibleMessages.length - 1];
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -44,14 +48,14 @@ export function ChatThread({
 
   return (
     <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
-      {messages.length === 0 ? (
+      {visibleMessages.length === 0 ? (
         emptyState || <DefaultEmptyState />
       ) : (
         <div className="flex flex-col">
-          {messages.map((message) => (
+          {visibleMessages.map((message) => (
             <ChatMessage key={message.id} message={message} />
           ))}
-          {isLoading && messages[messages.length - 1]?.role === "user" && (
+          {isLoading && lastVisibleMessage?.role === "user" && (
             <ChatLoadingMessage />
           )}
         </div>

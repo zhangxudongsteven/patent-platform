@@ -132,7 +132,7 @@ export default function Home() {
       return false;
     }
 
-    await sendMessage({ text: content.trim() });
+    void sendMessage({ text: content.trim() });
     return true;
   };
 

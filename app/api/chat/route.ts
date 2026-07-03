@@ -1,20 +1,9 @@
 import { streamQAUIMessageResponse } from "@/lib/service/chat";
-import { type UIMessage } from "ai";
+import { validateUIMessages, type UIMessage } from "ai";
 import { z } from "zod";
 
-const textPartSchema = z.object({
-  type: z.literal("text"),
-  text: z.string(),
-});
-
-const uiMessageSchema = z.object({
-  id: z.string(),
-  role: z.enum(["system", "user", "assistant"]),
-  parts: z.array(textPartSchema).default([]),
-});
-
 const chatRequestSchema = z.object({
-  messages: z.array(uiMessageSchema),
+  messages: z.array(z.unknown()),
 });
 
 export async function POST(req: Request) {
@@ -25,5 +14,13 @@ export async function POST(req: Request) {
     return Response.json({ error: "无效的对话请求" }, { status: 400 });
   }
 
-  return streamQAUIMessageResponse(parsed.data.messages as UIMessage[]);
+  try {
+    const messages = await validateUIMessages<UIMessage>({
+      messages: parsed.data.messages,
+    });
+
+    return streamQAUIMessageResponse(messages);
+  } catch {
+    return Response.json({ error: "无效的对话请求" }, { status: 400 });
+  }
 }
