@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [未发布]
 
+## [0.1.2] - 2026-07-05
+
 ### 变更
 
 - 优化侧边栏、报告工作流和测试页的 shadcn/ui 组件组合，改进可访问性与语义化样式。
@@ -15,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 将首页聊天与工作流跳转改为结构化提交契约，移除基于上传文案的内部分流。
 - 将首页工作流状态收敛为单个结构化 `activeWorkflow` 对象，降低工作流切换和重置状态分散度。
 - 补齐 Next.js 16 的 ESLint CLI 工具链，新增 flat config 并保留既有历史 lint 问题为 warning。
+- 引入 AI Elements 对话、消息、输入框、推理和工具展示组件，保留 AI SDK `UIMessage.parts` 结构化渲染。
+- 统一首页与 QA 测试页的聊天输入和消息列表，支持工具流、推理内容、附件和来源 part 的可见渲染。
+- 将 AI Elements registry 组件目录排除出全局 Prettier 格式化范围，保持与 shadcn/ui 源码组件的维护策略一致。
+
+### 修复
+
+- 默认隐藏 `step-start`、`data-*` 和未知 AI SDK part，避免内部流协议结构出现在聊天正文。
 
 ## [0.1.1] - 2026-07-03
 

@@ -2,39 +2,13 @@
 
 import { useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIMessage } from "ai";
+import { DefaultChatTransport } from "ai";
 import { Button } from "@/components/ui/button";
-import { SimpleChatInput } from "./simple-chat-input";
+import { ChatInput } from "@/components/chat-input";
 import { ChatThread } from "@/components/chat/chat-thread";
 import { Eraser, FileSearch } from "lucide-react";
 import { toast } from "sonner";
-import type { ChatMessageData } from "@/components/chat/types";
-
-function getTextFromUIMessage(message: UIMessage) {
-  return message.parts
-    .filter((part) => part.type === "text")
-    .map((part) => part.text)
-    .join("");
-}
-
-function toChatMessageData(message: UIMessage): ChatMessageData | null {
-  if (message.role !== "user" && message.role !== "assistant") {
-    return null;
-  }
-
-  const content = getTextFromUIMessage(message);
-
-  if (!content && message.role !== "assistant") {
-    return null;
-  }
-
-  return {
-    id: message.id,
-    role: message.role,
-    content,
-    timestamp: new Date(),
-  };
-}
+import type { ChatSubmit } from "@/components/chat/types";
 
 export default function QAPage() {
   const transport = useMemo(
@@ -54,11 +28,6 @@ export default function QAPage() {
     },
   });
   const isLoading = status === "submitted" || status === "streaming";
-  const messages = useMemo(
-    () =>
-      uiMessages.map(toChatMessageData).filter((message) => message !== null),
-    [uiMessages],
-  );
 
   // 清空对话
   const handleClearChat = () => {
@@ -88,7 +57,7 @@ export default function QAPage() {
             size="sm"
             onClick={handleClearChat}
             className="text-muted-foreground hover:text-foreground"
-            disabled={messages.length === 0}
+            disabled={uiMessages.length === 0}
           >
             <Eraser data-icon="inline-start" />
             清空对话
@@ -98,8 +67,8 @@ export default function QAPage() {
         {/* Chat Area */}
         <main className="flex flex-1 flex-col overflow-hidden max-h-[80vh]">
           <ChatThread
-            messages={messages}
-            isLoading={isLoading}
+            messages={uiMessages}
+            status={status}
             emptyState={
               <div className="flex h-full flex-col items-center justify-center px-4 py-8 text-center">
                 <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-primary/10">
@@ -137,9 +106,18 @@ export default function QAPage() {
 
           {/* Chat Input Area */}
           <div className="bg-background">
-            <SimpleChatInput
-              onSend={(content) => handleSend(content)}
+            <ChatInput
               disabled={isLoading}
+              onSubmit={(payload: ChatSubmit) => {
+                if (payload.type !== "chat") {
+                  return false;
+                }
+                void handleSend(payload.message);
+                return true;
+              }}
+              placeholder="输入您的问题…"
+              showTools={false}
+              status={status}
             />
           </div>
         </main>

@@ -79,10 +79,6 @@ export const chatTools: ChatTool[] = [
   },
 ];
 
-export const toolNames = Object.fromEntries(
-  chatTools.map((tool) => [tool.id, tool.name]),
-) as Record<ChatToolId, string>;
-
 export function getToolConfig(toolId: ChatToolId | null | undefined) {
   return chatTools.find((tool) => tool.id === toolId);
 }
@@ -101,29 +97,6 @@ export function getPlaceholderText(toolId: ChatToolId | null | undefined) {
   }
 
   return "向专利助手提问…";
-}
-
-export function toUploadedFileMeta(file: File): UploadedFileMeta {
-  return {
-    name: file.name,
-    size: file.size,
-    type: file.type,
-  };
-}
-
-export function getValidFiles(files: File[], toolId: ChatToolId | null) {
-  const uploadConfig = getUploadConfig(toolId);
-
-  if (!uploadConfig) {
-    return [];
-  }
-
-  const validFiles = files.filter((file) => {
-    const lowerName = file.name.toLowerCase();
-    return uploadConfig.extensions.some((ext) => lowerName.endsWith(ext));
-  });
-
-  return uploadConfig.multiple ? validFiles : validFiles.slice(0, 1);
 }
 
 export function formatUploadedFileMessage(files: UploadedFileMeta[]) {
