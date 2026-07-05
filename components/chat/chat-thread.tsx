@@ -1,19 +1,24 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import type { ChatStatus, UIMessage } from "ai";
 import { BookOpenText } from "lucide-react";
+import type { ReactNode } from "react";
 
-import { ChatMessage } from "@/components/chat-message";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
+import { ChatMessage, isVisibleMessagePart } from "@/components/chat-message";
 import { ChatLoadingMessage } from "@/components/chat/chat-loading-message";
-import type { ChatMessageData } from "@/components/chat/types";
 
 interface ChatThreadProps {
-  messages: ChatMessageData[];
-  isLoading?: boolean;
+  messages: UIMessage[];
+  status?: ChatStatus;
   emptyState?: ReactNode;
 }
 
-function DefaultEmptyState() {
+export function DefaultEmptyState() {
   return (
     <div className="flex h-full flex-col items-center justify-center px-4 text-center">
       <div className="mb-6 flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -29,37 +34,55 @@ function DefaultEmptyState() {
   );
 }
 
+export function hasRenderableContent(message: UIMessage) {
+  return message.parts.some(isVisibleMessagePart);
+}
+
+export function hasVisibleChatContent(message: UIMessage) {
+  return (
+    (message.role === "user" || message.role === "assistant") &&
+    hasRenderableContent(message)
+  );
+}
+
 export function ChatThread({
   messages,
-  isLoading = false,
+  status = "ready",
   emptyState,
 }: ChatThreadProps) {
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const visibleMessages = messages.filter(
-    (message) => message.content.trim().length > 0,
-  );
+  const visibleMessages = messages.filter(hasVisibleChatContent);
+  const isLoading = status === "submitted" || status === "streaming";
+  const isStreaming = status === "streaming";
   const lastVisibleMessage = visibleMessages[visibleMessages.length - 1];
 
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
-  }, [messages, isLoading]);
-
   return (
-    <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
-      {visibleMessages.length === 0 ? (
-        emptyState || <DefaultEmptyState />
-      ) : (
-        <div className="flex flex-col">
-          {visibleMessages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
-          ))}
-          {isLoading && lastVisibleMessage?.role === "user" && (
-            <ChatLoadingMessage />
-          )}
-        </div>
-      )}
-    </div>
+    <Conversation className="flex-1">
+      <ConversationContent className="gap-0 p-0">
+        {visibleMessages.length === 0 ? (
+          <div className="flex min-h-full flex-1 flex-col">
+            {emptyState || <DefaultEmptyState />}
+          </div>
+        ) : (
+          <>
+            {visibleMessages.map((message, index) => (
+              <ChatMessage
+                isLastMessage={index === visibleMessages.length - 1}
+                isStreaming={isStreaming}
+                key={message.id}
+                message={message}
+              />
+            ))}
+            {isLoading && lastVisibleMessage?.role === "user" && (
+              <ChatLoadingMessage />
+            )}
+          </>
+        )}
+      </ConversationContent>
+      <ConversationScrollButton
+        className="absolute right-4 bottom-4 rounded-full shadow-md"
+        size="icon"
+        variant="secondary"
+      />
+    </Conversation>
   );
 }

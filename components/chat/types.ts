@@ -15,14 +15,6 @@ export interface UploadedFileMeta {
   type: string;
 }
 
-export interface ChatMessageData {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  tool?: string;
-}
-
 export type ChatSubmit =
   | {
       type: "chat";

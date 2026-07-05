@@ -2,17 +2,21 @@
 
 import { useMemo, useState } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIMessage } from "ai";
+import { DefaultChatTransport } from "ai";
 import { ChatSidebar } from "@/components/chat-sidebar";
 import { ChatInput } from "@/components/chat-input";
-import { ChatThread } from "@/components/chat/chat-thread";
+import {
+  ChatThread,
+  DefaultEmptyState,
+  hasVisibleChatContent,
+} from "@/components/chat/chat-thread";
 import { SearchFormulaWorkflow } from "@/components/workflows/search-formula-workflow";
 import { ReportWorkflow } from "@/components/workflows/report-workflow";
 import { DisclosureWorkflow } from "@/components/workflows/disclosure-workflow";
 import { AnalysisWorkflow } from "@/components/workflows/analysis-workflow";
 import { KeywordSearchWorkflow } from "@/components/workflows/keyword-search-workflow";
 import { toast } from "sonner";
-import type { ChatMessageData, ChatSubmit } from "@/components/chat/types";
+import type { ChatSubmit } from "@/components/chat/types";
 
 type ActiveWorkflow =
   | { type: "keyword-search"; query: string }
@@ -20,32 +24,6 @@ type ActiveWorkflow =
   | { type: "report"; fileName: string }
   | { type: "disclosure"; fileName: string }
   | { type: "analysis"; fileNames: string[] };
-
-function getTextFromUIMessage(message: UIMessage) {
-  return message.parts
-    .filter((part) => part.type === "text")
-    .map((part) => part.text)
-    .join("");
-}
-
-function toChatMessageData(message: UIMessage): ChatMessageData | null {
-  if (message.role !== "user" && message.role !== "assistant") {
-    return null;
-  }
-
-  const content = getTextFromUIMessage(message);
-
-  if (!content && message.role !== "assistant") {
-    return null;
-  }
-
-  return {
-    id: message.id,
-    role: message.role,
-    content,
-    timestamp: new Date(),
-  };
-}
 
 export default function Home() {
   const [activeWorkflow, setActiveWorkflow] = useState<ActiveWorkflow | null>(
@@ -68,11 +46,7 @@ export default function Home() {
     },
   });
   const isLoading = status === "submitted" || status === "streaming";
-  const messages = useMemo(
-    () =>
-      uiMessages.map(toChatMessageData).filter((message) => message !== null),
-    [uiMessages],
-  );
+  const hasMessages = uiMessages.some(hasVisibleChatContent);
 
   const handleChatSubmit = async (payload: ChatSubmit) => {
     if (isLoading) return false;
@@ -232,13 +206,33 @@ export default function Home() {
         <header className="flex h-14 items-center justify-end border-b border-border bg-card px-4"></header>
 
         {/* Chat Area */}
-        <main className="flex flex-1 flex-col overflow-hidden">
-          <ChatThread messages={messages} isLoading={isLoading} />
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {hasMessages ? (
+            <>
+              <ChatThread messages={uiMessages} status={status} />
 
-          {/* Chat Input - Fixed at bottom */}
-          <div className="bg-background">
-            <ChatInput onSubmit={handleChatSubmit} disabled={isLoading} />
-          </div>
+              {/* Chat Input - Fixed at bottom */}
+              <div className="bg-background">
+                <ChatInput
+                  disabled={isLoading}
+                  onSubmit={handleChatSubmit}
+                  status={status}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex min-h-0 flex-1 items-center justify-center px-4 py-8">
+              <div className="flex w-full max-w-3xl flex-col items-center gap-10">
+                <DefaultEmptyState />
+                <ChatInput
+                  className="px-0 pb-0"
+                  disabled={isLoading}
+                  onSubmit={handleChatSubmit}
+                  status={status}
+                />
+              </div>
+            </div>
+          )}
         </main>
 
         {/* Footer */}

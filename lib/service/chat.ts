@@ -1,6 +1,5 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { RunnableSequence } from "@langchain/core/runnables";
-import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatOpenAI } from "@langchain/openai";
 import { CallbackHandler } from "@langfuse/langchain";
 import {
@@ -59,7 +58,7 @@ function createQAPromptTemplate() {
   ]);
 }
 
-function getTextFromUIMessage(message: UIMessage) {
+function getTextFromTextParts(message: UIMessage) {
   return message.parts
     .filter((part) => part.type === "text")
     .map((part) => part.text)
@@ -73,7 +72,7 @@ function toQARequest(messages: UIMessage[]) {
     )
     .map((message) => ({
       role: message.role as "user" | "assistant",
-      content: getTextFromUIMessage(message),
+      content: getTextFromTextParts(message),
     }))
     .filter((message) => message.content.trim().length > 0);
 
@@ -138,83 +137,6 @@ function getTextFromLangChainChunk(content: unknown) {
       return "";
     })
     .join("");
-}
-
-export async function generateQAAnswer(
-  question: string,
-  chatHistory: Array<{ role: "user" | "assistant"; content: string }>,
-  context?: string,
-): Promise<string> {
-  if (!process.env.OPENAI_API_KEY) {
-    return MISSING_OPENAI_API_KEY_MESSAGE;
-  }
-
-  const model = createQAChatModel();
-  const formattedHistory = formatHistory(chatHistory);
-  const promptTemplate = createQAPromptTemplate();
-
-  const chain = RunnableSequence.from([
-    promptTemplate,
-    model,
-    new StringOutputParser(),
-  ]);
-
-  const response = await chain.invoke(
-    {
-      question,
-      history: formattedHistory,
-      context: context || "无特定上下文",
-    },
-    {
-      callbacks: [langfuseHandler],
-    },
-  );
-
-  return response;
-}
-
-export async function streamQAAnswer(
-  question: string,
-  chatHistory: Array<{ role: "user" | "assistant"; content: string }>,
-  context?: string,
-) {
-  if (!process.env.OPENAI_API_KEY) {
-    async function* missingConfigGenerator() {
-      yield MISSING_OPENAI_API_KEY_MESSAGE;
-    }
-
-    return missingConfigGenerator();
-  }
-
-  const model = createQAChatModel();
-  const formattedHistory = formatHistory(chatHistory);
-  const promptTemplate = createQAPromptTemplate();
-
-  const chain = RunnableSequence.from([
-    promptTemplate,
-    model,
-    new StringOutputParser(),
-  ]);
-
-  const stream = await chain.stream(
-    {
-      question,
-      history: formattedHistory,
-      context: context || "无特定上下文",
-    },
-    {
-      callbacks: [langfuseHandler],
-    },
-  );
-
-  // Convert to a plain AsyncGenerator to ensure it can be serialized by Next.js Server Actions
-  async function* generator() {
-    for await (const chunk of stream) {
-      yield chunk;
-    }
-  }
-
-  return generator();
 }
 
 export async function streamQAUIMessageResponse(messages: UIMessage[]) {
